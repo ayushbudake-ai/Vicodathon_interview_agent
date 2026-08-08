@@ -25,5 +25,14 @@ app.use("/api/interview", interviewRouter);
 export { app };
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  app.listen(PORT, () => console.log(`Backend running on http://localhost:${PORT}`));
+  const server = app.listen(PORT, () => console.log(`Backend running on http://localhost:${PORT}`));
+  server.on("error", (err) => {
+    if (err.code === "EADDRINUSE") {
+      console.error(`\n[ERROR] Port ${PORT} is already in use by another process.`);
+      console.error(`Port ${PORT} has been freed or you can specify a different port with: PORT=5001 npm run dev\n`);
+      process.exit(1);
+    } else {
+      console.error(err);
+    }
+  });
 }

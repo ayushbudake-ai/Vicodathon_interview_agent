@@ -23,10 +23,14 @@ const toResults = (feedback = {}) => ({
   practicalExperience: feedback.practicalExperience ?? 75,
   strengths: feedback.strengths || [],
   weaknesses: feedback.weaknesses || [],
+  summary: feedback.summary || "",
   topicsToRevise: feedback.topicsToRevise || [],
   recommendations: feedback.recommendations || [],
-  recommendation: (feedback.recommendations || []).join(" "),
+  recommendation: feedback.summary || (feedback.recommendations || []).join(" "),
   topicScores: (feedback.questionPerformance || []).map((item) => [item.topic || "Interview topic", item.score || 0]),
+  curriculumCoverage: feedback.curriculumCoverage || { daysCovered: [], count: 0 },
+  questionsAsked: feedback.questionsAsked || 0,
+  followUpsAsked: feedback.followUpsAsked || 0,
   source: "live"
 });
 
@@ -68,6 +72,7 @@ export function useInterviewSession(candidate, explicitSessionId = null) {
           sessionId: existingSession.sessionId,
           currentQuestion: currentQ,
           currentTopic: currentQ?.topic || "Technical Assessment",
+          currentQuestionNumber: qAsked.length || 1,
           questionsAsked: qAsked,
           answers: existingSession.answers || [],
           conversationHistory: existingSession.conversationHistory || [],
@@ -135,8 +140,8 @@ export function useInterviewSession(candidate, explicitSessionId = null) {
     adaptive: message.questionType === "follow-up" || message.questionType === "clarification"
   }));
 
-  const primaryQuestions = (sessionState.questionsAsked || []).filter((q) => q.type === "primary");
-  const currentPrimaryCount = primaryQuestions.length;
+  const allQuestionsAsked = sessionState.questionsAsked || [];
+  const currentTotalQuestionCount = allQuestionsAsked.length || 1;
 
   const submitAnswer = async (answerText) => {
     const content = normalizeAnswer(answerText);
@@ -172,9 +177,9 @@ export function useInterviewSession(candidate, explicitSessionId = null) {
         answers: [...existing.answers, storedAnswer],
         currentQuestion: next,
         currentTopic: next.topic,
-        currentQuestionNumber: existing.currentQuestionNumber + (next.type === "primary" ? 1 : 0),
-        questionsAsked: next.type === "primary" ? [...existing.questionsAsked, next] : existing.questionsAsked,
-        coveredDays: next.type === "primary" ? [...new Set([...existing.coveredDays, next.day])] : existing.coveredDays,
+        currentQuestionNumber: existing.questionsAsked.length + 1,
+        questionsAsked: [...existing.questionsAsked, next],
+        coveredDays: [...new Set([...existing.coveredDays, next.day])],
         followUpCount: existing.followUpCount + (next.type !== "primary" ? 1 : 0),
         conversationHistory: [
           ...existing.conversationHistory,
@@ -197,12 +202,12 @@ export function useInterviewSession(candidate, explicitSessionId = null) {
   };
 
   const coverage = getCoverage(sessionState);
-  const topics = useMemo(() => buildTopicTimeline(primaryQuestions, currentPrimaryCount), [primaryQuestions, currentPrimaryCount]);
+  const topics = useMemo(() => buildTopicTimeline(allQuestionsAsked, currentTotalQuestionCount), [allQuestionsAsked, currentTotalQuestionCount]);
 
   return {
     candidate,
     messages,
-    questionNumber: currentPrimaryCount || 1,
+    questionNumber: currentTotalQuestionCount,
     totalQuestions: 8,
     topics,
     isLoading,
@@ -213,7 +218,7 @@ export function useInterviewSession(candidate, explicitSessionId = null) {
     followUpShown: false,
     followUpCount: sessionState.followUpCount,
     sessionState: { ...sessionState, error },
-    coveredDays: coverage.curriculumDaysCovered || [1],
+    coveredDays: sessionState.coveredDays || coverage.curriculumDaysCovered || [1],
     coverage,
     aiMode,
     submitAnswer,

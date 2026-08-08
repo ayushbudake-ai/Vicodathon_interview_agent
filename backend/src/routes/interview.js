@@ -114,10 +114,11 @@ router.post("/answer", async (req, res) => {
     ];
   }
 
-  const primaryAnsweredQuestionCount = session.questions.filter((question) => !question.isFollowUp).length;
   const totalQuestionsAsked = session.questions.length;
+  const uniqueCurriculumDaysCovered = new Set(session.curriculumDaysCovered || []).size;
 
-  if (primaryAnsweredQuestionCount >= 8 || totalQuestionsAsked >= 11) {
+  // The interview completes ONLY when totalQuestionsAsked >= 8 AND uniqueCurriculumDaysCovered >= 4
+  if (totalQuestionsAsked >= 8 && uniqueCurriculumDaysCovered >= 4) {
     const storedAnswer = addAnswerToSession(sessionId, { questionId, answer: answer.trim() });
     interviewSessionService.completeSession(sessionId);
     return res.json({ accepted: Boolean(storedAnswer), answerCount: session.answers.length, completed: true });

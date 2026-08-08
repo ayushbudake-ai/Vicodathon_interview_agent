@@ -79,12 +79,16 @@ export default function Results() {
             <p>{results.recommendation || "Your responses demonstrate clear technical reasoning across the interview topics."}</p>
           </div>
           <div className="score-stat">
-            <strong>{results.topicScores?.length || 0}</strong>
-            <span>topics explored</span>
+            <strong>{results.curriculumCoverage?.count || results.curriculumCoverage?.daysCovered?.length || 0}</strong>
+            <span>curriculum days covered</span>
           </div>
           <div className="score-stat">
-            <strong>{sessionState?.answers?.length || 0}</strong>
-            <span>questions answered</span>
+            <strong>{results.questionsAsked || sessionState?.answers?.length || 0}</strong>
+            <span>questions asked</span>
+          </div>
+          <div className="score-stat">
+            <strong>{results.followUpsAsked || 0}</strong>
+            <span>follow-ups asked</span>
           </div>
         </section>
 

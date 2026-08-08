@@ -60,17 +60,19 @@ function compactContext({ candidate, eligibleTopics = [], session, lastAnswer = 
 }
 
 function getCoveragePolicy(session, eligibleTopics = []) {
+  const totalQuestions = (session.questions || []).length;
   const primaryQuestions = (session.questions || []).filter((question) => !question.isFollowUp).length;
   const covered = new Set(session.curriculumDaysCovered || []);
   const uncoveredEligibleDays = [...new Set((eligibleTopics || []).map((topic) => topic.day).filter((day) => !covered.has(day)))];
   const lastQuestion = (session.questions || []).at(-1);
   return {
+    totalQuestionsAsked: totalQuestions,
     primaryQuestions,
     uniqueDaysCovered: covered.size,
     uncoveredEligibleDays,
     requiresNewDay: covered.size < 4 && uncoveredEligibleDays.length > 0,
-    requiresMorePrimary: primaryQuestions < 8,
-    mustAskPrimary: primaryQuestions < 8 && lastQuestion?.isFollowUp === true
+    requiresMoreQuestions: totalQuestions < 8,
+    mustAskPrimary: totalQuestions < 8 && lastQuestion?.isFollowUp === true
   };
 }
 
@@ -188,28 +190,8 @@ function fallbackInterviewResponse({ candidate, eligibleTopics = [], session, la
 
   const assessment = lastAnswer ? evaluateAnswerFallback(answerText, lastQuestion?.topic) : null;
   const signals = lastAnswer ? extractSignalsFromAnswer(answerText) : { projects: [], technologies: [] };
-
-  // Project-based question if projects/tech mentioned
-  if (signals.projects.length > 0 || signals.technologies.length > 0) {
-    const tech = signals.technologies[0] || "your stack";
-    const text = `You mentioned working with ${tech}. What were the key architectural trade-offs you faced when choosing ${tech}, and how did you measure its performance in production?`;
-    return {
-      action: "follow_up",
-      phase: "project",
-      question: {
-        id: randomUUID(),
-        day: lastQuestion?.curriculumDay || 7,
-        topic: `${tech} Architecture`,
-        type: "follow-up",
-        difficulty: "intermediate",
-        question: text,
-        text: text,
-        parentQuestionId: lastQuestion?.id
-      },
-      assessment,
-      extractedSignals: signals
-    };
-  }
+  const coveredDaysSet = new Set(session.curriculumDaysCovered || []);
+  const lastWasFollowUp = lastQuestion?.isFollowUp === true || lastQuestion?.type === "follow-up" || lastQuestion?.type === "clarification";
 
   // Clarification request handling
   if (answerText.toLowerCase().startsWith("what do you mean") || answerText.toLowerCase().includes("can you clarify")) {
@@ -232,8 +214,29 @@ function fallbackInterviewResponse({ candidate, eligibleTopics = [], session, la
     };
   }
 
-  // Follow-up question on previous question if primary count is high
-  if (lastAnswer && lastQuestion && !lastQuestion.isFollowUp && session.followUpCount < 2) {
+  // If previous question was NOT a follow-up, generate a contextual follow-up based on signals or previous topic
+  if (!lastWasFollowUp && (signals.projects.length > 0 || signals.technologies.length > 0)) {
+    const tech = signals.technologies[0] || signals.projects[0] || "your stack";
+    const text = `You mentioned working with ${tech}. What were the key architectural trade-offs you faced when choosing ${tech}, and how did you measure its performance in production?`;
+    return {
+      action: "follow_up",
+      phase: "project",
+      question: {
+        id: randomUUID(),
+        day: lastQuestion?.curriculumDay || 7,
+        topic: `${tech} Architecture`,
+        type: "follow-up",
+        difficulty: "intermediate",
+        question: text,
+        text: text,
+        parentQuestionId: lastQuestion?.id
+      },
+      assessment,
+      extractedSignals: signals
+    };
+  }
+
+  if (!lastWasFollowUp && lastAnswer && lastQuestion) {
     const followText = `Expanding on your previous point about ${lastQuestion.topic}: what failure modes or bottleneck risks would you monitor for, and how would you mitigate them?`;
     return {
       action: "follow_up",
@@ -253,10 +256,17 @@ function fallbackInterviewResponse({ candidate, eligibleTopics = [], session, la
     };
   }
 
-  // Next topic lookup from curriculum or fallback catalog
+  // Otherwise (after a follow-up or when moving forward), pick a new topic from an uncovered curriculum day
   const coveredTopicKeys = new Set((session.questions || []).map((q) => `${q.curriculumDay}|${q.topic}`));
-  const eligible = (eligibleTopics || []).find((topic) => !coveredTopicKeys.has(`${topic.day}|${topic.topic}`))
-    || (eligibleTopics || [])[primaryQuestions % Math.max(1, (eligibleTopics || []).length)];
+  
+  let eligible = null;
+  if (coveredDaysSet.size < 4) {
+    eligible = (eligibleTopics || []).find((topic) => !coveredDaysSet.has(topic.day));
+  }
+  if (!eligible) {
+    eligible = (eligibleTopics || []).find((topic) => !coveredTopicKeys.has(`${topic.day}|${topic.topic}`))
+      || (eligibleTopics || [])[primaryQuestions % Math.max(1, (eligibleTopics || []).length)];
+  }
 
   const source = eligible
     ? fallbackQuestions.find((q) => Number(q.day) === Number(eligible.day) && q.topic === eligible.topic)
@@ -300,6 +310,9 @@ function fallbackFinalFeedback(session) {
   const practical = avg("practicalExperience", overall);
 
   const topicsCovered = [...new Set((session.questions || []).map((q) => q.topic).filter(Boolean))];
+  const uniqueDays = [...new Set(session.curriculumDaysCovered || [])];
+  const questionsAskedCount = (session.questions || []).length;
+  const followUpsAskedCount = session.followUpCount || (session.questions || []).filter((q) => q.isFollowUp).length;
 
   return {
     overallScore: overall,
@@ -317,12 +330,18 @@ function fallbackFinalFeedback(session) {
       "Deeper focus recommended on production observability and distributed failure modes",
       "Could elaborate more on quantitative benchmarks when evaluating trade-offs"
     ],
+    summary: `Candidate completed ${questionsAskedCount} technical interview interactions spanning ${uniqueDays.length} curriculum days. Strong communication and practical reasoning.`,
     topicsToRevise: topicsCovered.slice(-3),
     recommendations: [
       "Practice explaining system design bottlenecks and cache invalidation strategies",
       "Incorporate explicit metrics and benchmark numbers when discussing performance"
     ],
-    curriculumCoverage: { days: session.curriculumDaysCovered || [] },
+    curriculumCoverage: {
+      daysCovered: uniqueDays,
+      count: uniqueDays.length
+    },
+    questionsAsked: questionsAskedCount,
+    followUpsAsked: followUpsAskedCount,
     questionPerformance: (session.questions || []).map((q) => {
       const evalObj = evaluations.find((e) => e.questionId === q.id);
       return {
@@ -453,7 +472,7 @@ export async function generateInterviewResponse({ candidate, eligibleTopics = []
 
 export async function generateFinalFeedback({ candidate, eligibleTopics = [], session }) {
   if (!getApiKey()) return fallbackFinalFeedback(session);
-  const instruction = "You are an AI interview evaluator. Return JSON only with: overallScore, technicalKnowledge, problemSolving, systemDesign, productionThinking, communication, practicalExperience, strengths, weaknesses, topicsToRevise, recommendations, curriculumCoverage, questionPerformance. Claims must be grounded in actual interview answers. Scores 0-100.";
+  const instruction = "You are an AI interview evaluator. Return JSON only with: overallScore, technicalKnowledge, problemSolving, systemDesign, productionThinking, communication, practicalExperience, strengths, weaknesses, summary, topicsToRevise, recommendations, curriculumCoverage, questionPerformance. Claims must be grounded in actual interview answers. Scores 0-100.";
 
   try {
     const feedback = await structuredCompletion(instruction, { ...compactContext({ candidate, eligibleTopics, session }), answers: session.answers, evaluations: session.evaluations });
@@ -466,6 +485,17 @@ export async function generateFinalFeedback({ candidate, eligibleTopics = [], se
     if (!Array.isArray(feedback.topicsToRevise)) feedback.topicsToRevise = ["System Design"];
     if (!Array.isArray(feedback.recommendations)) feedback.recommendations = ["Practice explainability"];
     if (!Array.isArray(feedback.questionPerformance)) feedback.questionPerformance = [];
+
+    const uniqueDays = [...new Set(session.curriculumDaysCovered || [])];
+    feedback.curriculumCoverage = {
+      daysCovered: uniqueDays,
+      count: uniqueDays.length
+    };
+    feedback.questionsAsked = (session.questions || []).length;
+    feedback.followUpsAsked = session.followUpCount || (session.questions || []).filter((q) => q.isFollowUp).length;
+    if (!feedback.summary) {
+      feedback.summary = `Candidate completed ${feedback.questionsAsked} questions spanning ${uniqueDays.length} curriculum days with solid technical performance.`;
+    }
 
     return feedback;
   } catch {
