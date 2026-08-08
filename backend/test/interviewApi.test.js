@@ -16,6 +16,18 @@ function request(server, path, body) {
   });
 }
 
+function getRequest(server, path) {
+  return new Promise((resolve, reject) => {
+    const req = http.request({ port: server.address().port, path, method: "GET" }, (res) => {
+      let data = "";
+      res.on("data", (chunk) => { data += chunk; });
+      res.on("end", () => resolve({ status: res.statusCode, body: JSON.parse(data) }));
+    });
+    req.on("error", reject);
+    req.end();
+  });
+}
+
 test("complete API interview flow works for three candidate profiles with answer-driven follow-ups", async () => {
   const originalFetch = global.fetch;
   const previousKey = process.env.AI_API_KEY;
@@ -71,3 +83,18 @@ test("complete API interview flow works for three candidate profiles with answer
     else process.env.AI_API_KEY = previousKey;
   }
 });
+
+test("supports GET /api/interview/:sessionId for session recovery", async () => {
+  const server = app.listen(0);
+  try {
+    const start = await request(server, "/api/interview/start", { candidateId: "CAND-001" });
+    assert.equal(start.status, 201);
+    const sessionRes = await getRequest(server, `/api/interview/${start.body.sessionId}`);
+    assert.equal(sessionRes.status, 200);
+    assert.equal(sessionRes.body.sessionId, start.body.sessionId);
+    assert.equal(sessionRes.body.currentQuestion.id, start.body.question.id);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+

@@ -3,7 +3,6 @@ import Landing from "./pages/Landing";
 import Candidates from "./pages/Candidates";
 import CandidateDetails from "./pages/CandidateDetails";
 import InterviewSetup from "./pages/InterviewSetup";
-import InterviewQuote from "./pages/InterviewQuote";
 import Interview from "./pages/Interview";
 import Complete from "./pages/Complete";
 import Results from "./pages/Results";
@@ -23,22 +22,26 @@ export default function App() {
       <Route path="/" element={<Landing />} />
       <Route path="/candidates" element={<Candidates />} />
       <Route path="/candidate/:candidateId" element={<CandidateDetails />} />
+      
+      {/* Interview Setup Pages */}
+      <Route path="/setup" element={<InterviewSetup />} />
+      <Route path="/setup/:candidateId" element={<InterviewSetup />} />
       <Route path="/interview/:candidateId" element={<InterviewSetup />} />
-      <Route path="/quote" element={<InterviewQuote />} />
 
+      {/* Live Interview & Session Flow */}
       <Route element={<InterviewFlow />}>
+        <Route path="/interview/session/:sessionId" element={<Interview />} />
+        <Route path="/interview/room/:sessionId" element={<Interview />} />
+        <Route path="/interview/live" element={<Interview />} />
         <Route path="/interview" element={<Interview />} />
         <Route path="/complete" element={<Complete />} />
+        <Route path="/results/:sessionId" element={<Results />} />
         <Route path="/results" element={<Results />} />
       </Route>
 
       <Route path="/feedback/:candidateId" element={<Results />} />
-      <Route path="/curriculum" element={<InterviewSetup />} />
-      <Route path="/documentation" element={<Landing />} />
-      <Route path="/about" element={<Landing />} />
-      <Route path="/profile" element={<Candidates />} />
-      <Route path="/settings" element={<Candidates />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
+

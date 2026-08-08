@@ -1,4 +1,5 @@
 import { createContext, useContext, useMemo } from "react";
+import { useParams } from "react-router-dom";
 import { candidates } from "../data";
 import { useInterviewSession } from "../hooks/useInterviewSession";
 
@@ -10,8 +11,9 @@ function getCandidate() {
 }
 
 export function InterviewProvider({ children }) {
+  const { sessionId } = useParams();
   const candidate = getCandidate();
-  const interview = useInterviewSession(candidate);
+  const interview = useInterviewSession(candidate, sessionId);
 
   const value = useMemo(() => interview, [
     interview.candidate,
@@ -20,12 +22,15 @@ export function InterviewProvider({ children }) {
     interview.totalQuestions,
     interview.topics,
     interview.isLoading,
+    interview.statusState,
     interview.results,
     interview.feedbackStatus,
     interview.answered,
     interview.followUpShown,
     interview.sessionState,
     interview.submitAnswer,
+    interview.retryStart,
+    interview.fetchFeedback
   ]);
 
   return <InterviewContext.Provider value={value}>{children}</InterviewContext.Provider>;
@@ -36,3 +41,4 @@ export function useInterview() {
   if (!context) throw new Error("useInterview must be used inside InterviewProvider");
   return context;
 }
+

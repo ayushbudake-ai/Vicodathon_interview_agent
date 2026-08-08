@@ -12,6 +12,8 @@ export class InterviewSessionService {
       candidateId,
       startedAt: new Date().toISOString(),
       status: "created",
+      phase: "warmup", // warmup -> project -> technical -> system_design -> production -> complete
+      difficulty: "intermediate", // beginner | intermediate | advanced | expert
       questions: [],
       answers: [],
       evaluations: [],
@@ -20,8 +22,23 @@ export class InterviewSessionService {
       currentQuestion: null,
       currentTopic: null,
       questionCount: 0,
-      followUpCount: 0
-      ,conversationHistory: []
+      followUpCount: 0,
+      conversationHistory: [],
+      candidateSignals: {
+        projects: [],
+        technologies: [],
+        claimedExperience: [],
+        strengths: [],
+        weaknesses: []
+      },
+      skills: {
+        technicalKnowledge: { score: null, confidence: "low" },
+        problemSolving: { score: null, confidence: "low" },
+        systemDesign: { score: null, confidence: "low" },
+        productionThinking: { score: null, confidence: "low" },
+        communication: { score: null, confidence: "low" },
+        practicalExperience: { score: null, confidence: "low" }
+      }
     };
     this.sessions.set(session.sessionId, session);
     return session;
@@ -45,16 +62,25 @@ export class InterviewSessionService {
     const storedQuestion = {
       id: question.id ?? randomUUID(),
       text: question.text.trim(),
-      curriculumDay: Number.isFinite(question.curriculumDay) ? question.curriculumDay : null,
-      topic: question.topic ?? null,
-      type: question.type ?? null,
-      difficulty: question.difficulty ?? null,
+      curriculumDay: Number.isFinite(question.curriculumDay) ? question.curriculumDay : (question.day ?? null),
+      topic: question.topic ?? "Technical Discussion",
+      type: question.type ?? "primary",
+      difficulty: question.difficulty ?? session.difficulty,
       parentQuestionId: question.parentQuestionId ?? null,
-      isFollowUp: question.isFollowUp === true,
+      isFollowUp: question.isFollowUp === true || question.type === "follow-up",
       createdAt: new Date().toISOString()
     };
     session.questions.push(storedQuestion);
-    session.conversationHistory.push({ role: "interviewer", content: storedQuestion.text, questionId: storedQuestion.id, questionType: storedQuestion.type, day: storedQuestion.curriculumDay, topic: storedQuestion.topic, order: session.conversationHistory.length + 1 });
+    session.conversationHistory.push({
+      role: "interviewer",
+      content: storedQuestion.text,
+      questionId: storedQuestion.id,
+      parentQuestionId: storedQuestion.parentQuestionId,
+      questionType: storedQuestion.type,
+      day: storedQuestion.curriculumDay,
+      topic: storedQuestion.topic,
+      order: session.conversationHistory.length + 1
+    });
     session.currentQuestion = storedQuestion;
     session.currentTopic = storedQuestion.topic;
     session.questionCount = session.questions.length;
@@ -81,7 +107,12 @@ export class InterviewSessionService {
       answeredAt: new Date().toISOString()
     };
     session.answers.push(storedAnswer);
-    session.conversationHistory.push({ role: "candidate", content: storedAnswer.text, questionId: storedAnswer.questionId, order: session.conversationHistory.length + 1 });
+    session.conversationHistory.push({
+      role: "candidate",
+      content: storedAnswer.text,
+      questionId: storedAnswer.questionId,
+      order: session.conversationHistory.length + 1
+    });
     return storedAnswer;
   }
 
@@ -89,7 +120,35 @@ export class InterviewSessionService {
     const session = this.getSession(sessionId);
     if (!session || session.status === "completed" || evaluation == null) return null;
     session.evaluations.push(evaluation);
+
+    // Update skills state if scores are provided
+    const updateSkill = (key, val) => {
+      if (Number.isFinite(val) && val >= 0 && val <= 100) {
+        const current = session.skills[key].score;
+        session.skills[key].score = current === null ? val : Math.round((current + val) / 2);
+        session.skills[key].confidence = "medium";
+      }
+    };
+    if (evaluation.technicalKnowledge !== undefined) updateSkill("technicalKnowledge", evaluation.technicalKnowledge);
+    if (evaluation.problemSolving !== undefined) updateSkill("problemSolving", evaluation.problemSolving);
+    if (evaluation.systemDesign !== undefined) updateSkill("systemDesign", evaluation.systemDesign);
+    if (evaluation.productionThinking !== undefined) updateSkill("productionThinking", evaluation.productionThinking);
+    if (evaluation.communication !== undefined) updateSkill("communication", evaluation.communication);
+    if (evaluation.practicalExperience !== undefined) updateSkill("practicalExperience", evaluation.practicalExperience);
+
     return evaluation;
+  }
+
+  updateSessionState(sessionId, updates = {}) {
+    const session = this.getSession(sessionId);
+    if (!session) return null;
+    if (updates.phase) session.phase = updates.phase;
+    if (updates.difficulty) session.difficulty = updates.difficulty;
+    if (updates.candidateSignals) {
+      if (updates.candidateSignals.projects) session.candidateSignals.projects = [...new Set([...session.candidateSignals.projects, ...updates.candidateSignals.projects])];
+      if (updates.candidateSignals.technologies) session.candidateSignals.technologies = [...new Set([...session.candidateSignals.technologies, ...updates.candidateSignals.technologies])];
+    }
+    return session;
   }
 
   updateCurrentTopic(sessionId, topic) {
@@ -103,6 +162,7 @@ export class InterviewSessionService {
     const session = this.getSession(sessionId);
     if (!session || session.status === "completed") return null;
     session.status = "completed";
+    session.completedAt = new Date().toISOString();
     return session;
   }
 
@@ -113,6 +173,8 @@ export class InterviewSessionService {
       sessionId: session.sessionId,
       candidateId: session.candidateId,
       status: session.status,
+      phase: session.phase,
+      difficulty: session.difficulty,
       previousQuestions: session.questions,
       previousAnswers: session.answers,
       conversationHistory: session.conversationHistory,
@@ -121,7 +183,9 @@ export class InterviewSessionService {
       evaluations: session.evaluations,
       currentQuestion: session.currentQuestion,
       currentTopic: session.currentTopic,
-      followUpCount: session.followUpCount
+      followUpCount: session.followUpCount,
+      candidateSignals: session.candidateSignals,
+      skills: session.skills
     };
   }
 }
@@ -137,3 +201,4 @@ export const addEvaluationToSession = (sessionId, evaluation) => interviewSessio
 export const updateSessionCurrentTopic = (sessionId, topic) => interviewSessionService.updateCurrentTopic(sessionId, topic);
 export const getConversationContext = (sessionId) => interviewSessionService.getConversationContext(sessionId);
 export const finalizeSession = (sessionId) => interviewSessionService.completeSession(sessionId);
+

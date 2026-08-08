@@ -37,6 +37,11 @@ export const api = {
       body: JSON.stringify({ candidateId })
     }),
 
+  getSession: (sessionId) =>
+    request(`/interview/${sessionId}`, {
+      method: "GET"
+    }),
+
   startInterview: (candidateId) =>
     request("/interview/start", {
       method: "POST",
@@ -55,3 +60,4 @@ export const api = {
       body: JSON.stringify({ sessionId })
     })
 };
+
