@@ -25,7 +25,7 @@ app.use("/api/interview", interviewRouter);
 export default app;
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const server = app.listen(PORT, () => console.log(`Backend running on http://localhost:${PORT}`));
+  const server = app.listen(PORT, () => console.log(`AI Interview Agent running on port ${PORT}`));
   server.on("error", (err) => {
     if (err.code === "EADDRINUSE") {
       console.error(`\n[ERROR] Port ${PORT} is already in use by another process.`);
