@@ -1,0 +1,114 @@
+[
+  {
+    "id": 1,
+    "day": 10,
+    "topic": "Hybrid retrieval and relevance tuning",
+    "prompt": "Walk me through how you would design a retrieval pipeline for a domain-specific assistant. What would you retrieve, and why?",
+    "follow": "Good. How would you decide whether semantic retrieval, keyword retrieval, or a hybrid strategy is the right choice?"
+  },
+  {
+    "id": 2,
+    "day": 8,
+    "topic": "Chroma, Pinecone, and retrieval basics",
+    "prompt": "When would you choose a vector database over a traditional relational store for an AI application?",
+    "follow": "What trade-offs would you consider around indexing, metadata filtering, consistency, and latency?"
+  },
+  {
+    "id": 3,
+    "day": 12,
+    "topic": "Zero-shot, few-shot, and system prompts",
+    "prompt": "How would you structure a system prompt so a model stays grounded and reliable in production?",
+    "follow": "How would you test whether that prompt change actually improves model behavior?"
+  },
+  {
+    "id": 4,
+    "day": 21,
+    "topic": "Planning, tools, and protocol design",
+    "prompt": "Describe an agentic workflow you would trust in a real product. What tools would the agent need?",
+    "follow": "If one of those tools fails, how should the agent recover without becoming unpredictable?"
+  },
+  {
+    "id": 5,
+    "day": 23,
+    "topic": "Connecting agents to external tools and context sources via MCP",
+    "prompt": "Explain how Model Context Protocol can connect an AI application to external tools or context sources.",
+    "follow": "What would you monitor to make sure context and tool handoffs remain reliable?"
+  },
+  {
+    "id": 6,
+    "day": 28,
+    "topic": "Docker, Kubernetes, observability",
+    "prompt": "If you were shipping this AI system to production, what deployment concerns would you prioritize first?",
+    "follow": "How would you approach model versioning, rollback, latency, and observability?"
+  },
+  {
+    "id": 7,
+    "day": 16,
+    "topic": "Endpoints, state, and orchestration",
+    "prompt": "How would you design the backend state and API boundaries for a multi-turn AI application?",
+    "follow": "What would you persist, what would stay ephemeral, and how would you protect the API from failure or overload?"
+  },
+  {
+    "id": 8,
+    "day": 31,
+    "topic": "Architecture synthesis and engineering trade-offs",
+    "prompt": "Imagine you must explain your complete AI system to an engineering team. Walk through the architecture and the most important trade-offs.",
+    "follow": "What is the first production weakness you would improve if you had one more week?"
+  },
+  {
+    "id": 9,
+    "day": 1,
+    "topic": "VS Code, Python, and setup fundamentals",
+    "prompt": "How would you set up a reproducible Python development environment for an AI project, and why does that matter for a team?",
+    "follow": "What would you do differently if a teammate's environment produced different results from yours?"
+  },
+  {
+    "id": 10,
+    "day": 7,
+    "topic": "Embeddings, vector space, and similarity",
+    "prompt": "Explain what an embedding actually represents, and how you would choose a similarity metric for a given use case.",
+    "follow": "How would embeddings behave differently for short queries versus long documents, and how would you handle that?"
+  },
+  {
+    "id": 11,
+    "day": 13,
+    "topic": "Tool schemas, function calling, and structured JSON outputs",
+    "prompt": "How would you design a function-calling schema so a model reliably produces valid, structured output?",
+    "follow": "What would you do if the model returned output that almost matched your schema but was subtly invalid?"
+  },
+  {
+    "id": 12,
+    "day": 18,
+    "topic": "Token streaming, SSE, and responsive chat UX",
+    "prompt": "Walk me through how you would implement streaming responses from an LLM to a chat UI.",
+    "follow": "How would you handle a dropped connection partway through a stream?"
+  },
+  {
+    "id": 13,
+    "day": 20,
+    "topic": "Session memory, summarization, and context-window management",
+    "prompt": "How would you manage conversation memory for a long-running chat session without blowing the context window?",
+    "follow": "How would you decide what to summarize versus what to keep verbatim?"
+  },
+  {
+    "id": 14,
+    "day": 22,
+    "topic": "Coordinating multiple agents and delegating sub-tasks",
+    "prompt": "How would you coordinate multiple specialized agents on a single complex task?",
+    "follow": "How would you prevent agents from stepping on each other's work or looping indefinitely?"
+  },
+  {
+    "id": 15,
+    "day": 27,
+    "topic": "Prompt injection defense, data privacy, and safety guardrails",
+    "prompt": "How would you defend an LLM-powered application against prompt injection from untrusted content?",
+    "follow": "What guardrails would you add if that application also had access to sensitive user data?"
+  },
+  {
+    "id": 16,
+    "day": 29,
+    "topic": "Tracing, structured logging, and production monitoring for AI services",
+    "prompt": "What would you monitor in a production AI service to catch quality regressions before users notice?",
+    "follow": "How would you trace a single bad response back to the specific prompt, retrieval, or model version that caused it?"
+  }
+]

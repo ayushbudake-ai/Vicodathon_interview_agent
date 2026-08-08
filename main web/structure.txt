@@ -1,0 +1,33 @@
+                         FRONTEND
+                            │
+                            ▼
+                    ┌──────────────┐
+                    │ Express API  │
+                    └──────┬───────┘
+                           │
+             ┌─────────────┼─────────────┐
+             ▼             ▼             ▼
+       Candidate       Session       Curriculum
+        Loader         Manager          Loader
+             │             │             │
+             └─────────────┼─────────────┘
+                           ▼
+                  Conversation Memory
+                           │
+                           ▼
+                    AI Orchestrator
+                           │
+              ┌────────────┼────────────┐
+              ▼            ▼            ▼
+          Question      Follow-up    Evaluator
+          Generator     Generator
+              │            │            │
+              └────────────┼────────────┘
+                           ▼
+                       Feedback
+                           │
+                           ▼
+                    Express API
+                           │
+                           ▼
+                       FRONTEND

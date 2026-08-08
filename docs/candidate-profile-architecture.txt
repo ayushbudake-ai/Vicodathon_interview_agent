@@ -1,0 +1,24 @@
+candidates.json
+      │
+      ▼
+Candidate Profile Loader
+      │
+      ├── member
+      │     ├── id
+      │     ├── name
+      │     ├── jobRole
+      │     ├── yearsExperience
+      │     ├── education
+      │     └── status
+      │
+      ├── missions[]
+      │     ├── day
+      │     ├── title
+      │     ├── passed
+      │     ├── skipped
+      │     └── attempts
+      │
+      └── signals
+            ├── commitDays
+            ├── missionsCompleted
+            └── missionsFirstTry

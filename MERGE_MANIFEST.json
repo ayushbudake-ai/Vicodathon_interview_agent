@@ -1,0 +1,11 @@
+{
+  "source_ui": "ai-interview-frontend-ofspace2-ui.zip",
+  "source_vicod": "Vicod_temp.zip",
+  "merged": {
+    "frontend": "AI Interview UI retained as primary visual system; candidate selection and Vicod content integrated.",
+    "data": "Vicod synthetic candidates + curriculum + 8-question thread",
+    "backend": "starter Express session/answer/feedback APIs",
+    "ai_agent": "candidate-aware interview planning starter",
+    "docs": "team role separation and candidate architecture"
+  }
+}
