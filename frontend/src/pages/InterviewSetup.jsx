@@ -164,6 +164,24 @@ export default function InterviewSetup() {
           {setupStep === 3 && (
             <div className="setup-grid">
               <div className="setup-card journey-card">
+                {/* Integrated Mindset Quote Card */}
+                <div className="quote-card" style={{ marginBottom: 24, padding: "16px 20px" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                    <span className="small-label" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <Sparkles size={13} /> INTERVIEW MINDSET
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setQuoteIndex((prev) => (prev + 1) % fallbackQuotes.length)}
+                      style={{ background: "none", border: "none", color: "#888", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontSize: "0.8rem" }}
+                    >
+                      <RefreshCw size={12} /> Cycle
+                    </button>
+                  </div>
+                  <blockquote style={{ fontSize: "0.95rem", fontStyle: "italic", margin: 0, color: "#e0e0e0" }}>
+                    &ldquo;{fallbackQuotes[quoteIndex]}&rdquo;
+                  </blockquote>
+                </div>
                 <div className="card-header">
                   <div>
                     <span className="small-label">6-DIMENSION EVALUATION RUBRIC</span>
@@ -184,23 +202,6 @@ export default function InterviewSetup() {
                   ))}
                 </div>
 
-                {/* Integrated Mindset Quote Card */}
-                <div className="quote-card" style={{ marginTop: 24, padding: "16px 20px" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                    <span className="small-label" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <Sparkles size={13} /> INTERVIEW MINDSET
-                    </span>
-                    <button
-                      onClick={() => setQuoteIndex((prev) => (prev + 1) % fallbackQuotes.length)}
-                      style={{ background: "none", border: "none", color: "#888", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontSize: "0.8rem" }}
-                    >
-                      <RefreshCw size={12} /> Cycle
-                    </button>
-                  </div>
-                  <blockquote style={{ fontSize: "0.95rem", fontStyle: "italic", margin: 0, color: "#e0e0e0" }}>
-                    “{fallbackQuotes[quoteIndex]}”
-                  </blockquote>
-                </div>
               </div>
 
               <div className="setup-card session-card">

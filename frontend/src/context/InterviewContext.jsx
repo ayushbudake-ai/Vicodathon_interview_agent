@@ -29,6 +29,7 @@ export function InterviewProvider({ children }) {
     interview.followUpShown,
     interview.sessionState,
     interview.submitAnswer,
+    interview.finishInterview,
     interview.retryStart,
     interview.fetchFeedback
   ]);

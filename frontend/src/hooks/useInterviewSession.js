@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { getCoverage } from "../services/interview/questionPlanner";
 import { buildTopicTimeline, createInitialInterviewState, normalizeAnswer } from "../utils/interviewState";
-import { chatWithEvaluation, completeInterviewSession, fetchInterviewSession, startInterviewSession, submitAnswerToSession } from "../services/interviewService";
+import { chatWithEvaluation, completeInterviewSession, fetchInterviewSession, finalizeInterviewSession, startInterviewSession, submitAnswerToSession } from "../services/interviewService";
 
 const toQuestion = (question) => ({
   id: question.id || question.questionId,
@@ -35,6 +35,9 @@ const toResults = (feedback = {}) => ({
   topicScores: (feedback.questionPerformance || []).map((item) => [item.topic || "Interview topic", item.score || 0]),
   curriculumCoverage: feedback.curriculumCoverage || { daysCovered: [], count: 0 },
   questionsAsked: feedback.questionsAsked || 0,
+  questionsAnswered: feedback.questionsAnswered ?? 0,
+  questionsUnanswered: feedback.questionsUnanswered ?? 0,
+  totalQuestions: feedback.totalQuestions ?? 8,
   followUpsAsked: feedback.followUpsAsked || 0,
   source: "live"
 });
@@ -51,6 +54,7 @@ export function useInterviewSession(candidate, explicitSessionId = null) {
   const [chatState, setChatState] = useState({ messages: [], loading: false, error: "" });
   const [error, setError] = useState("");
   const submissionInFlight = useRef(false);
+  const finishInFlight = useRef(false);
 
   const initSession = useCallback(async () => {
     let active = true;
@@ -230,6 +234,32 @@ export function useInterviewSession(candidate, explicitSessionId = null) {
     }
   };
 
+  const finishInterview = async () => {
+    if (isLoading || finishInFlight.current || !aiSessionId || sessionState.completionState) return;
+
+    finishInFlight.current = true;
+    setIsLoading(true);
+    setStatusState("FINISHING_INTERVIEW");
+    setError("");
+
+    try {
+      await finalizeInterviewSession(aiSessionId);
+      setSessionState((existing) => ({
+        ...existing,
+        interviewStatus: "complete",
+        completionState: true
+      }));
+      setStatusState("COMPLETED");
+      await fetchFeedback(aiSessionId);
+    } catch (requestError) {
+      setError(requestError.message || "Unable to finish the interview. Please try again.");
+      setStatusState("ERROR");
+    } finally {
+      finishInFlight.current = false;
+      setIsLoading(false);
+    }
+  };
+
   const retryStart = () => {
     initSession();
   };
@@ -257,6 +287,7 @@ export function useInterviewSession(candidate, explicitSessionId = null) {
     coverage,
     aiMode,
     submitAnswer,
+    finishInterview,
     retryStart,
     fetchFeedback
   };

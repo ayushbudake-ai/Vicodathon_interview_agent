@@ -107,8 +107,8 @@ export default function Results() {
             <span>curriculum days covered</span>
           </div>
           <div className="score-stat">
-            <strong>{results.questionsAsked || sessionState?.answers?.length || 0}</strong>
-            <span>questions asked</span>
+            <strong>{results.questionsAnswered ?? sessionState?.answers?.length ?? 0}/{results.totalQuestions || 8}</strong>
+            <span>questions answered</span>
           </div>
           <div className="score-stat">
             <strong>{results.followUpsAsked || 0}</strong>

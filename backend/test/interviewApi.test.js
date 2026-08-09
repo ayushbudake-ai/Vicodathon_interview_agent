@@ -158,3 +158,31 @@ test("supports GET /api/interview/:sessionId for session recovery", async () => 
     await new Promise((resolve) => server.close(resolve));
   }
 });
+
+test("allows an interview to finish early and reports unanswered planned questions", async () => {
+  const server = app.listen(0);
+  try {
+    const start = await request(server, "/api/interview/start", { candidateId: "CAND-001" });
+    assert.equal(start.status, 201);
+
+    const answer = await request(server, "/api/interview/answer", {
+      sessionId: start.body.sessionId,
+      questionId: start.body.question.id,
+      answer: "I would use cache-aside with explicit invalidation and monitor hit rate."
+    });
+    assert.equal(answer.status, 200);
+
+    const finish = await request(server, "/api/interview/finish", { sessionId: start.body.sessionId });
+    assert.equal(finish.status, 200);
+    assert.equal(finish.body.interviewStatus, "completed");
+    assert.equal(finish.body.answersSubmitted, 1);
+    assert.equal(finish.body.questionsUnanswered, 7);
+
+    const evaluation = await request(server, `/api/interview/${start.body.sessionId}/evaluation`, {});
+    assert.equal(evaluation.status, 200);
+    assert.equal(evaluation.body.evaluation.questionsAnswered, 1);
+    assert.equal(evaluation.body.evaluation.questionsUnanswered, 7);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});

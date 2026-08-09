@@ -25,6 +25,7 @@ export class InterviewSessionService {
       currentQuestion: null,
       currentTopic: null,
       questionCount: 0,
+      plannedQuestionCount: 8,
       followUpCount: 0,
       conversationHistory: [],
       candidateSignals: {

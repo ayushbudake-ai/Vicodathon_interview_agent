@@ -245,12 +245,20 @@ router.post("/:sessionId/evaluation/chat", async (req, res) => {
 
 router.post("/finish", (req, res) => {
   const { sessionId } = req.body || {};
-  const session = finalizeSession(sessionId);
-  if (!session) {
+  const existingSession = getInterviewSession(sessionId);
+  if (!existingSession) {
     return res.status(404).json({ error: "Session not found" });
   }
 
-  res.json({ ok: true, sessionId, interviewStatus: session.status });
+  const session = existingSession.status === "completed" ? existingSession : finalizeSession(sessionId);
+
+  res.json({
+    ok: true,
+    sessionId,
+    interviewStatus: session.status,
+    answersSubmitted: session.answers.length,
+    questionsUnanswered: Math.max(0, (session.plannedQuestionCount || 8) - session.answers.length)
+  });
 });
 
 export default router;

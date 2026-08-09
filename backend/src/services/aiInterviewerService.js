@@ -699,14 +699,20 @@ CRITICAL RULES:
 1. Topic Coverage Percentage MUST be calculated from actual questions asked: (topicQuestionCount / totalQuestionCount) * 100.
 2. Separate Topic Coverage % from Performance Score.
 3. Every strength and weakness MUST be grounded in actual interview answers, NOT generic predefined text.
-4. Keep the tone professional, objective, and constructive.`;
+4. Questions with answer value "NO_ANSWER" are unanswered: award no credit for them, do not fabricate evidence, and account for them in the overall assessment.
+5. Keep the tone professional, objective, and constructive.`;
 
   try {
     const feedback = await structuredCompletion(systemInstruction, {
       ...compactContext({ candidate, eligibleTopics, session }),
-      answers: session.answers,
+      answers: (session.questions || []).map((question) => ({
+        questionId: question.id,
+        answer: session.answers?.find((item) => item.questionId === question.id)?.text || "NO_ANSWER"
+      })),
       evaluations: session.evaluations,
-      questions: session.questions
+      questions: session.questions,
+      plannedQuestionCount: session.plannedQuestionCount || 8,
+      unansweredQuestionCount: Math.max(0, (session.plannedQuestionCount || 8) - (session.answers || []).length)
     });
 
     const scoreFields = ["overallScore", "technicalKnowledge", "problemSolving", "systemDesign", "productionThinking", "communication", "practicalExperience"];
@@ -747,6 +753,9 @@ CRITICAL RULES:
       count: uniqueDays.length
     };
     feedback.questionsAsked = questions.length;
+    feedback.questionsAnswered = (session.answers || []).length;
+    feedback.questionsUnanswered = Math.max(0, (session.plannedQuestionCount || 8) - feedback.questionsAnswered);
+    feedback.totalQuestions = session.plannedQuestionCount || 8;
     feedback.followUpsAsked = session.followUpCount || questions.filter((q) => q.isFollowUp).length;
     feedback.questionPerformance = feedback.topicBreakdown.map((t) => ({ topic: t.topic, score: t.performanceScore || feedback.overallScore }));
 

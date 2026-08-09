@@ -33,16 +33,20 @@ function buildQuestionAnalysis(session) {
     if (evaluation?.missingConcepts?.length) evidenceParts.push(...evaluation.missingConcepts.map((concept) => `Missing concept: ${concept}`));
     if (answer?.text) evidenceParts.push(`Candidate answered: ${answer.text}`);
 
-    const score = isMeaningfulNumber(evaluation?.score) ? Math.round(evaluation.score) : 72;
+    const unanswered = !answer?.text?.trim();
+    const score = unanswered ? 0 : (isMeaningfulNumber(evaluation?.score) ? Math.round(evaluation.score) : 0);
     const evidenceText = evidenceParts.length
       ? evidenceParts.join(" ")
-      : `The interview included ${question.topic || "this topic"} but the evidence was not rich enough to generate detailed analysis.`;
+      : unanswered
+        ? "NO_ANSWER: The candidate did not answer this question."
+        : `The interview included ${question.topic || "this topic"} but the evidence was not rich enough to generate detailed analysis.`;
 
     return {
       questionId: question.id,
       topic: question.topic || "Technical Discussion",
       question: question.text || "",
-      candidateAnswer: answer?.text || "",
+      candidateAnswer: answer?.text || "NO_ANSWER",
+      unanswered,
       score,
       strengths: Array.isArray(evaluation?.strengths) ? evaluation.strengths : [],
       weaknesses: Array.isArray(evaluation?.weaknesses) ? evaluation.weaknesses : [],
@@ -66,7 +70,7 @@ function summarizeEvidence(questionAnalysis) {
 
 function buildCompetencies(questionAnalysis, session) {
   const questionCount = questionAnalysis.length;
-  const scored = questionAnalysis.filter((item) => Boolean(item.questionId));
+  const scored = questionAnalysis.filter((item) => Boolean(item.questionId) && !item.unanswered);
 
   return competencyDefinitions.map((definition) => {
     const values = scored
@@ -156,9 +160,13 @@ export function buildEvaluationReport(session, candidate) {
   const questionAnalysis = buildQuestionAnalysis(session);
   const competencies = buildCompetencies(questionAnalysis, session);
   const scoredCompetencies = competencies.filter((item) => item.score !== null);
-  const overallScore = scoredCompetencies.length
+  const evidenceScore = scoredCompetencies.length
     ? Math.round(scoredCompetencies.reduce((sum, item) => sum + item.score, 0) / scoredCompetencies.length)
-    : 72;
+    : 0;
+  const totalQuestions = Math.max(session.plannedQuestionCount || 8, questionAnalysis.length);
+  const answeredQuestions = questionAnalysis.filter((item) => !item.unanswered).length;
+  const unansweredQuestions = Math.max(0, totalQuestions - answeredQuestions);
+  const overallScore = Math.round(evidenceScore * (answeredQuestions / totalQuestions));
   const confidence = scoredCompetencies.length
     ? Number((scoredCompetencies.reduce((sum, item) => sum + item.confidence, 0) / scoredCompetencies.length).toFixed(2))
     : 0.68;
@@ -179,7 +187,10 @@ export function buildEvaluationReport(session, candidate) {
     questionAnalysis,
     topicCoverage: buildTopicCoverage(questionAnalysis),
     recommendations,
-    summary: `The candidate completed ${questionAnalysis.length} interview questions and demonstrated a grounded but uneven performance profile.`,
+    summary: `The candidate answered ${answeredQuestions} of ${totalQuestions} planned interview questions; ${unansweredQuestions} question${unansweredQuestions === 1 ? " was" : "s were"} unanswered.`,
+    questionsAnswered: answeredQuestions,
+    questionsUnanswered: unansweredQuestions,
+    totalQuestions,
     domain: session.domain || "Backend Development",
     difficulty: session.difficulty || "Advanced",
     candidateProfile: buildCandidateInterviewContext(candidate) || {
@@ -247,6 +258,9 @@ export function buildLegacyFeedback(evaluation, session) {
       daysCovered: session.curriculumDaysCovered || [],
       count: (session.curriculumDaysCovered || []).length
     },
+    questionsAnswered: evaluation.questionsAnswered,
+    questionsUnanswered: evaluation.questionsUnanswered,
+    totalQuestions: evaluation.totalQuestions,
     questionsAsked: session.questions?.length || 0,
     followUpsAsked: session.followUpCount || 0,
     evaluation

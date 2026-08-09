@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Send, Sparkles, Clock3, PanelRightOpen, RefreshCw, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Logo from "../components/common/Logo";
@@ -16,6 +16,7 @@ export default function Interview() {
     isLoading,
     statusState,
     submitAnswer,
+    finishInterview,
     coveredDays,
     sessionState,
     aiMode,
@@ -25,6 +26,10 @@ export default function Interview() {
 
   const [answer, setAnswer] = useState("");
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [showSubmitConfirmation, setShowSubmitConfirmation] = useState(false);
+  const answerInputRef = useRef(null);
+  const continueButtonRef = useRef(null);
+  const submitAnswersButtonRef = useRef(null);
 
   // Timer calculated based on session.startedAt so refresh doesn't reset time
   useEffect(() => {
@@ -59,6 +64,35 @@ export default function Interview() {
   };
 
   const isCompleted = sessionState.completionState || statusState === "COMPLETED" || statusState === "RESULTS";
+  const isFinishingInterview = statusState === "FINISHING_INTERVIEW" || feedbackStatus === "loading";
+  const answeredCount = sessionState.answers?.length || 0;
+
+  useEffect(() => {
+    if (!isCompleted && !isLoading && !showSubmitConfirmation && sessionState.currentQuestion) {
+      answerInputRef.current?.focus();
+    }
+  }, [sessionState.currentQuestion?.id, isCompleted, isLoading, showSubmitConfirmation]);
+
+  useEffect(() => {
+    if (!showSubmitConfirmation) return undefined;
+    continueButtonRef.current?.focus();
+    const handleEscape = (event) => {
+      if (event.key === "Escape" && !isFinishingInterview) setShowSubmitConfirmation(false);
+    };
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [showSubmitConfirmation, isFinishingInterview]);
+
+  const continueInterview = () => {
+    setShowSubmitConfirmation(false);
+    window.setTimeout(() => answerInputRef.current?.focus(), 0);
+  };
+
+  const confirmFinish = async () => {
+    if (isFinishingInterview) return;
+    await finishInterview();
+    setShowSubmitConfirmation(false);
+  };
 
   return (
     <div className="interview-app">
@@ -196,6 +230,7 @@ export default function Interview() {
           {!isCompleted && (
             <form className="answer-box" onSubmit={handleSubmit}>
               <textarea
+                ref={answerInputRef}
                 value={answer}
                 onChange={(e) => setAnswer(e.target.value)}
                 placeholder="Explain your technical approach, reasoning, and trade-offs..."
@@ -203,7 +238,7 @@ export default function Interview() {
                 disabled={isLoading || !sessionState.currentQuestion}
                 data-testid="answer-input"
                 onKeyDown={(event) => {
-                  if (event.key === "Enter" && (event.ctrlKey || event.metaKey || !event.shiftKey)) {
+                  if (event.key === "Enter" && !event.shiftKey) {
                     event.preventDefault();
                     handleSubmit(event);
                   }
@@ -220,7 +255,49 @@ export default function Interview() {
                   <Send size={17} />
                 </button>
               </div>
+              <button
+                type="button"
+                className="submit-interview-button"
+                onClick={() => setShowSubmitConfirmation(true)}
+                disabled={isLoading || !sessionState.currentQuestion}
+              >
+                Submit Interview
+              </button>
             </form>
+          )}
+
+          {showSubmitConfirmation && !isCompleted && (
+            <div className="submit-confirmation-backdrop" role="presentation" onMouseDown={(event) => {
+              if (event.target === event.currentTarget && !isFinishingInterview) continueInterview();
+            }}>
+              <section
+                className="submit-confirmation-modal"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="submit-interview-title"
+                aria-describedby="submit-interview-description"
+                onKeyDown={(event) => {
+                  if (event.key === "Tab") {
+                    event.preventDefault();
+                    (event.shiftKey ? submitAnswersButtonRef : continueButtonRef).current?.focus();
+                  }
+                }}
+              >
+                <span className="small-label">FINISH EARLY</span>
+                <h2 id="submit-interview-title">Submit Interview?</h2>
+                <p id="submit-interview-description">
+                  You have answered {answeredCount} of {totalQuestions} questions. The remaining questions will be left unanswered and your completed answers will be evaluated.
+                </p>
+                <div className="submit-confirmation-actions">
+                  <button ref={continueButtonRef} type="button" className="btn btn-secondary" onClick={continueInterview} disabled={isFinishingInterview}>
+                    Continue Interview
+                  </button>
+                  <button ref={submitAnswersButtonRef} type="button" className="btn btn-primary" onClick={confirmFinish} disabled={isFinishingInterview}>
+                    {isFinishingInterview ? "Analyzing your interview..." : "Submit Answers"}
+                  </button>
+                </div>
+              </section>
+            </div>
           )}
         </section>
 

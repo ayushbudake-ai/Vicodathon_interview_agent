@@ -60,6 +60,12 @@ export const api = {
       body: JSON.stringify({ sessionId })
     }),
 
+  finalizeInterview: (sessionId) =>
+    request("/interview/finish", {
+      method: "POST",
+      body: JSON.stringify({ sessionId })
+    }),
+
   chatEvaluation: (sessionId, candidateId, message, history = []) =>
     request(`/interview/${sessionId}/evaluation/chat`, {
       method: "POST",

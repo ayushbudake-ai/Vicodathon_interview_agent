@@ -16,6 +16,10 @@ export async function completeInterviewSession(sessionId) {
   return api.finishInterview(sessionId);
 }
 
+export async function finalizeInterviewSession(sessionId) {
+  return api.finalizeInterview(sessionId);
+}
+
 export async function chatWithEvaluation(sessionId, candidateId, message, history = []) {
   return api.chatEvaluation(sessionId, candidateId, message, history);
 }
