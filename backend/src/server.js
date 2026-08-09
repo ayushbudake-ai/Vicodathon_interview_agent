@@ -10,7 +10,7 @@ if (process.env.NODE_ENV !== "production" && fs.existsSync(envPath) && typeof pr
   process.loadEnvFile(envPath);
 }
 
-const app = express();
+export const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(cors());

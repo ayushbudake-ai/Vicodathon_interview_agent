@@ -85,6 +85,66 @@ test("complete API interview flow works for three candidate profiles with answer
   }
 });
 
+test("supports custom Domain, Role, and Experience Level in session creation", async () => {
+  const server = app.listen(0);
+  try {
+    const start = await request(server, "/api/interview/start", {
+      candidateId: "CAND-002",
+      domain: "Web Development",
+      role: "Full Stack Engineer",
+      experienceLevel: "Advanced"
+    });
+    assert.equal(start.status, 201);
+    assert.equal(start.body.domain, "Web Development");
+    assert.equal(start.body.role, "Full Stack Engineer");
+    assert.equal(start.body.experienceLevel, "Advanced");
+
+    const sessionRes = await getRequest(server, `/api/interview/${start.body.sessionId}`);
+    assert.equal(sessionRes.status, 200);
+    assert.equal(sessionRes.body.domain, "Web Development");
+    assert.equal(sessionRes.body.role, "Full Stack Engineer");
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+test("enforces minimum 8 questions and minimum 4 unique curriculum days", async () => {
+  const server = app.listen(0);
+  try {
+    const start = await request(server, "/api/interview/start", {
+      domain: "Backend Development",
+      role: "Backend Engineer",
+      experienceLevel: "Intermediate"
+    });
+    assert.equal(start.status, 201);
+
+    let question = start.body.question;
+    let answerCount = 0;
+    let completed = false;
+
+    while (!completed) {
+      answerCount += 1;
+      const res = await request(server, "/api/interview/answer", {
+        sessionId: start.body.sessionId,
+        questionId: question.id,
+        answer: "I used Redis caching with cache-aside pattern to reduce database load and improve latency."
+      });
+      assert.equal(res.status, 200);
+      completed = res.body.completed === true;
+      if (!completed) {
+        question = res.body.question;
+      }
+    }
+
+    assert.ok(answerCount >= 8, `Expected answerCount >= 8, got ${answerCount}`);
+    const sessionRes = await getRequest(server, `/api/interview/${start.body.sessionId}`);
+    const uniqueDays = new Set(sessionRes.body.questions.map((q) => q.curriculumDay)).size;
+    assert.ok(uniqueDays >= 4, `Expected uniqueDays >= 4, got ${uniqueDays}`);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
 test("supports GET /api/interview/:sessionId for session recovery", async () => {
   const server = app.listen(0);
   try {
@@ -98,4 +158,3 @@ test("supports GET /api/interview/:sessionId for session recovery", async () => 
     await new Promise((resolve) => server.close(resolve));
   }
 });
-
