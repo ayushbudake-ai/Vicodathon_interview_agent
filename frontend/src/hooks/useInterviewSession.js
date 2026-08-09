@@ -21,11 +21,16 @@ const toResults = (feedback = {}) => ({
   production: feedback.productionThinking ?? 75,
   communication: feedback.communication ?? 80,
   practicalExperience: feedback.practicalExperience ?? 75,
+  scoreExplanation: feedback.scoreExplanation || "",
+  domain: feedback.domain || localStorage.getItem("selectedDomain") || "Backend Development",
+  difficulty: feedback.difficulty || localStorage.getItem("selectedDifficulty") || "Advanced",
   strengths: feedback.strengths || [],
   weaknesses: feedback.weaknesses || [],
   summary: feedback.summary || "",
   topicsToRevise: feedback.topicsToRevise || [],
   recommendations: feedback.recommendations || [],
+  focusedAreas: feedback.focusedAreas || [],
+  topicBreakdown: feedback.topicBreakdown || [],
   recommendation: feedback.summary || (feedback.recommendations || []).join(" "),
   topicScores: (feedback.questionPerformance || []).map((item) => [item.topic || "Interview topic", item.score || 0]),
   curriculumCoverage: feedback.curriculumCoverage || { daysCovered: [], count: 0 },
@@ -91,7 +96,9 @@ export function useInterviewSession(candidate, explicitSessionId = null) {
         // Start brand new session
         setStatusState("STARTING");
         const candidateId = candidate?.originalId || candidate?.id || "CAND-001";
-        const response = await startInterviewSession(candidateId);
+        const domain = localStorage.getItem("selectedDomain") || "Backend Development";
+        const difficulty = localStorage.getItem("selectedDifficulty") || "Advanced";
+        const response = await startInterviewSession(candidateId, domain, difficulty);
         if (!active) return;
 
         setAiSessionId(response.sessionId);
@@ -99,7 +106,11 @@ export function useInterviewSession(candidate, explicitSessionId = null) {
         setAiMode("live");
 
         const question = toQuestion(response.question);
-        setSessionState(createInitialInterviewState(candidate, question));
+        setSessionState({
+          ...createInitialInterviewState(candidate, question),
+          domain: response.domain || domain,
+          difficulty: response.difficulty || difficulty
+        });
         setStatusState("QUESTION_READY");
       }
     } catch (err) {

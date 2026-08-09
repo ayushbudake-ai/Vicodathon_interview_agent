@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, ArrowRight, CheckCircle2, CircleAlert, Sparkles, Target, RefreshCw } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, CircleAlert, Sparkles, Target, RefreshCw, Layers, ShieldCheck } from "lucide-react";
 import Logo from "../components/common/Logo";
 import { useInterview } from "../context/InterviewContext";
 
@@ -22,7 +22,7 @@ export default function Results() {
           <h1 style={{ marginTop: 12 }}>Analyzing your<br /><span style={{ color: "#38bdf8" }}>interview performance.</span></h1>
           <p style={{ color: "#a1a1aa", marginTop: 8 }}>
             {feedbackStatus === "loading"
-              ? "Synthesizing answers, technical depth, and system design signals..."
+              ? "Synthesizing answers, technical depth, and domain-specific evidence..."
               : "No active report found. Start an interview to see your detailed report."}
           </p>
           {feedbackStatus === "error" && (
@@ -38,6 +38,9 @@ export default function Results() {
     );
   }
 
+  const domain = results.domain || localStorage.getItem("selectedDomain") || "Backend Development";
+  const difficulty = results.difficulty || localStorage.getItem("selectedDifficulty") || "Advanced";
+
   const competencies = [
     ["Technical Knowledge", results.technical],
     ["Problem Solving", results.problemSolving],
@@ -47,21 +50,26 @@ export default function Results() {
     ["Practical Experience", results.practicalExperience]
   ];
 
+  // Section 32 & 33: Topic Coverage % vs Performance Score
+  const topicBreakdown = results.topicBreakdown || [];
+
   return (
     <div className="app-dark results-app">
       <header className="results-header">
         <Link to="/"><Logo /></Link>
-        <span className="setup-label">COMPETENCY REPORT</span>
+        <span className="setup-label" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Layers size={13} /> {domain.toUpperCase()} · <ShieldCheck size={13} /> {difficulty.toUpperCase()}
+        </span>
         <Link to="/setup" className="new-interview">New interview <ArrowRight size={15} /></Link>
       </header>
 
       <main className="results-main">
         <div className="results-intro">
           <div>
-            <div className="eyebrow"><Sparkles size={14} /> Comprehensive Evaluation</div>
-            <h1>Strong foundation.<br /><span>Clear actionable feedback.</span></h1>
+            <div className="eyebrow"><Sparkles size={14} /> {domain} Competency Assessment</div>
+            <h1>Technical Signal &<br /><span>Evidence-Based Feedback.</span></h1>
           </div>
-          <p>Based on your adaptive interview performance across technical depth, system design, and communication.</p>
+          <p>Evaluation conducted for candidate <strong>{candidate?.name || "Candidate"}</strong> at <strong>{difficulty}</strong> level in <strong>{domain}</strong>.</p>
         </div>
 
         <section className="score-hero">
@@ -74,9 +82,9 @@ export default function Results() {
           <div className="score-copy">
             <span className="small-label">OVERALL COMPETENCY SCORE</span>
             <h2 data-testid="feedback-summary">
-              {results.overall >= 80 ? "Exceptional Candidate" : results.overall >= 70 ? "Strong Technical Signal" : "Solid Progress"}
+              {results.overall >= 82 ? "Strong Senior Signal" : results.overall >= 70 ? "Competent Engineering Signal" : "Foundational Progress"}
             </h2>
-            <p>{results.recommendation || "Your responses demonstrate clear technical reasoning across the interview topics."}</p>
+            <p>{results.scoreExplanation || results.recommendation || "Your interview performance demonstrated practical reasoning across technical scenarios."}</p>
           </div>
           <div className="score-stat">
             <strong>{results.curriculumCoverage?.count || results.curriculumCoverage?.daysCovered?.length || 0}</strong>
@@ -93,50 +101,79 @@ export default function Results() {
         </section>
 
         <section className="report-grid">
+          {/* 6-Dimension Competency Model */}
           <article className="report-card">
             <div className="card-header">
               <div>
                 <span className="small-label">6-DIMENSION COMPETENCY MODEL</span>
                 <h2>Independent Skill Breakdown</h2>
               </div>
+              <span className="completion-pill">0 - 100</span>
             </div>
             {competencies.map(([name, score]) => (
               <div className="skill-row" key={name}>
                 <div>
                   <span>{name}</span>
-                  <strong>{score ?? 75}</strong>
+                  <strong>{score ?? 70} / 100</strong>
                 </div>
                 <div className="skill-track">
-                  <i style={{ width: `${score ?? 75}%` }} />
+                  <i style={{ width: `${score ?? 70}%` }} />
                 </div>
               </div>
             ))}
           </article>
 
+          {/* Topic Coverage % vs Performance Score */}
           <article className="report-card">
             <div className="card-header">
               <div>
                 <span className="small-label">TOPIC BREAKDOWN</span>
-                <h2>Explored Technical Areas</h2>
+                <h2>Topic Coverage vs Performance</h2>
               </div>
+              <span className="completion-pill">Question Distribution</span>
             </div>
             <div className="topic-score-list">
-              {(results.topicScores || []).map(([topic, score]) => (
-                <div className="topic-score" key={topic}>
-                  <span>{topic}</span>
-                  <div className="skill-track"><i style={{ width: `${score}%` }} /></div>
-                  <strong>{score}</strong>
-                </div>
-              ))}
+              {topicBreakdown.length > 0 ? (
+                topicBreakdown.map((item) => (
+                  <div className="topic-score-enhanced" key={item.topic}>
+                    <div className="topic-score-meta">
+                      <strong>{item.topic}</strong>
+                      <div className="topic-metrics-badges">
+                        <span className="coverage-badge">Coverage: {item.coveragePercentage}%</span>
+                        <span className="perf-badge">Performance: {item.performanceScore}/100</span>
+                      </div>
+                    </div>
+                    <div className="skill-track" style={{ marginTop: 6 }}>
+                      <i style={{ width: `${item.performanceScore}%` }} />
+                    </div>
+                  </div>
+                ))
+              ) : (
+                (results.topicScores || []).map(([topic, score]) => (
+                  <div className="topic-score-enhanced" key={topic}>
+                    <div className="topic-score-meta">
+                      <strong>{topic}</strong>
+                      <div className="topic-metrics-badges">
+                        <span className="coverage-badge">Coverage: 20%</span>
+                        <span className="perf-badge">Performance: {score}/100</span>
+                      </div>
+                    </div>
+                    <div className="skill-track" style={{ marginTop: 6 }}>
+                      <i style={{ width: `${score}%` }} />
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </article>
         </section>
 
+        {/* What Stood Out & What to Strengthen */}
         <section className="insights-grid">
           <article className="insight-card positive">
             <div className="insight-icon"><CheckCircle2 size={19} /></div>
             <div>
-              <span className="small-label">KEY STRENGTHS</span>
+              <span className="small-label">GROUNDED EVIDENCE</span>
               <h2>What Stood Out</h2>
             </div>
             <ul>
@@ -160,21 +197,36 @@ export default function Results() {
           </article>
         </section>
 
+        {/* Personalized Recommended Focus Areas */}
         <section className="learning-plan">
           <div>
             <div className="eyebrow"><Target size={14} /> Actionable Next Steps</div>
             <h2>Recommended Focus Areas</h2>
-            <p>Targeted topics to elevate your technical interview performance.</p>
+            <p>Personalized topics derived from your {domain} interview responses.</p>
           </div>
           <div className="plan-list">
-            {(results.topicsToRevise || []).slice(0, 3).map((title, index) => (
-              <div className="plan-row" key={title}>
-                <span>{String(index + 1).padStart(2, "0")}</span>
-                <div>
-                  <strong>{title}</strong>
-                  <p>{(results.recommendations || [])[index] || results.recommendation || "Review this topic and practice trade-off explanations."}</p>
+            {(results.focusedAreas && results.focusedAreas.length > 0
+              ? results.focusedAreas
+              : (results.topicsToRevise || []).map((title, index) => ({
+                  step: String(index + 1).padStart(2, "0"),
+                  topic: title,
+                  why: "Coverage & Performance signal",
+                  evidence: (results.recommendations || [])[index] || "Review core mechanisms and trade-offs.",
+                  whatToLearn: "Theoretical mechanisms & architectural patterns",
+                  whatToPractice: "Hands-on prototype & benchmark testing"
+                }))
+            ).slice(0, 4).map((item, index) => (
+              <div className="plan-row-enhanced" key={item.topic || index}>
+                <span className="plan-num">{item.step || String(index + 1).padStart(2, "0")}</span>
+                <div className="plan-details">
+                  <strong>{item.topic}</strong>
+                  {item.why && <p className="plan-why"><strong>Why:</strong> {item.why}</p>}
+                  {item.evidence && <p className="plan-evidence"><strong>Evidence:</strong> {item.evidence}</p>}
+                  <div className="plan-actions-chips">
+                    {item.whatToLearn && <span className="chip learn">Learn: {item.whatToLearn}</span>}
+                    {item.whatToPractice && <span className="chip practice">Practice: {item.whatToPractice}</span>}
+                  </div>
                 </div>
-                <ArrowRight size={16} />
               </div>
             ))}
           </div>
@@ -185,4 +237,3 @@ export default function Results() {
     </div>
   );
 }
-

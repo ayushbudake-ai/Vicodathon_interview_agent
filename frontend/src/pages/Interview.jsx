@@ -105,7 +105,7 @@ export default function Interview() {
               <span className="small-label">LIVE ADAPTIVE INTERVIEW</span>
               <h1>Think out loud. <span>Go deep.</span></h1>
               <p className="interview-context">
-                {candidate?.name || "Candidate"} · {sessionState?.phase || "technical"} · {sessionState?.currentTopic || "Preparing session"} · {aiMode === "live" ? "AI Live" : "Offline Engine"}
+                {candidate?.name || "Candidate"} · {sessionState?.domain || localStorage.getItem("selectedDomain") || "Backend Development"} ({sessionState?.difficulty || localStorage.getItem("selectedDifficulty") || "Advanced"}) · {sessionState?.currentTopic || "Preparing session"}
               </p>
             </div>
             <Badge>Question {questionNumber} / {totalQuestions}</Badge>
@@ -164,48 +164,64 @@ export default function Interview() {
               </div>
             )}
 
-            {/* Completed Banner */}
+            {/* Completed Banner below final answer */}
             {isCompleted && (
-              <div className="message-row ai" style={{ marginTop: 16 }}>
-                <div className="ai-avatar" style={{ background: "#22c55e" }}><CheckCircle2 size={18} color="#fff" /></div>
-                <div className="message-content">
-                  <div className="message-meta"><strong>AI Interviewer</strong><span>Session Complete</span></div>
-                  <div className="message-bubble ai" style={{ borderColor: "#22c55e", background: "rgba(34, 197, 94, 0.1)" }}>
-                    Thank you! That completes our technical interview. Click <strong>"View Results"</strong> above to see your competency report.
+              <div className="interview-complete-cta-card" data-testid="interview-complete-cta" style={{ marginTop: 24 }}>
+                <div className="complete-cta-header">
+                  <div className="ai-avatar" style={{ background: "#22c55e", border: "none" }}>
+                    <CheckCircle2 size={20} color="#fff" />
+                  </div>
+                  <div>
+                    <span className="small-label" style={{ color: "#4ade80" }}>INTERVIEW COMPLETE</span>
+                    <h2 style={{ margin: "4px 0 0", fontSize: 20, color: "#fff" }}>Your interview has been evaluated.</h2>
                   </div>
                 </div>
+                <p style={{ color: "#a1a1aa", fontSize: 13, margin: "14px 0 20px", lineHeight: 1.6 }}>
+                  All questions and answers have been recorded. Click below to view your domain-specific competency report.
+                </p>
+                <button
+                  data-testid="end-interview-primary"
+                  className="btn btn-primary"
+                  onClick={finish}
+                  disabled={feedbackStatus === "loading"}
+                  style={{ width: "100%", padding: "14px 20px", fontSize: 14, fontWeight: 700, borderRadius: 8 }}
+                >
+                  {feedbackStatus === "loading" ? "Building your report..." : "VIEW RESULTS →"}
+                </button>
               </div>
             )}
           </div>
 
-          {/* Answer Input Form */}
-          <form className="answer-box" onSubmit={handleSubmit}>
-            <textarea
-              value={answer}
-              onChange={(e) => setAnswer(e.target.value)}
-              placeholder={isCompleted ? "Interview completed." : "Explain your technical approach, reasoning, and trade-offs..."}
-              rows={4}
-              disabled={isLoading || isCompleted || !sessionState.currentQuestion}
-              data-testid="answer-input"
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && (event.ctrlKey || event.metaKey || !event.shiftKey)) {
-                  event.preventDefault();
-                  handleSubmit(event);
-                }
-              }}
-            />
-            <div className="answer-toolbar">
-              <span>Tip: Shift+Enter for new line. Press Enter or Send to submit.</span>
-              <button
-                data-testid="submit-answer"
-                className="send-button"
-                disabled={!answer.trim() || isLoading || isCompleted || !sessionState.currentQuestion}
-                aria-label="Submit answer"
-              >
-                <Send size={17} />
-              </button>
-            </div>
-          </form>
+          {/* Answer Input Form — Hidden when interview is completed */}
+          {!isCompleted && (
+            <form className="answer-box" onSubmit={handleSubmit}>
+              <textarea
+                value={answer}
+                onChange={(e) => setAnswer(e.target.value)}
+                placeholder="Explain your technical approach, reasoning, and trade-offs..."
+                rows={4}
+                disabled={isLoading || !sessionState.currentQuestion}
+                data-testid="answer-input"
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && (event.ctrlKey || event.metaKey || !event.shiftKey)) {
+                    event.preventDefault();
+                    handleSubmit(event);
+                  }
+                }}
+              />
+              <div className="answer-toolbar">
+                <span>Tip: Shift+Enter for new line. Press Enter or Send to submit.</span>
+                <button
+                  data-testid="submit-answer"
+                  className="send-button"
+                  disabled={!answer.trim() || isLoading || !sessionState.currentQuestion}
+                  aria-label="Submit answer"
+                >
+                  <Send size={17} />
+                </button>
+              </div>
+            </form>
+          )}
         </section>
 
         <aside className="journey-sidebar">

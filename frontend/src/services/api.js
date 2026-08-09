@@ -42,10 +42,10 @@ export const api = {
       method: "GET"
     }),
 
-  startInterview: (candidateId) =>
+  startInterview: (candidateId, domain, difficulty) =>
     request("/interview/start", {
       method: "POST",
-      body: JSON.stringify({ candidateId })
+      body: JSON.stringify({ candidateId, domain, difficulty })
     }),
 
   submitAnswer: (sessionId, questionId, answer) =>

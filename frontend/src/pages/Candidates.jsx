@@ -20,9 +20,46 @@ export default function Candidates() {
         <div className="eyebrow"><Sparkles size={14}/> Personalized interview</div>
         <h1 style={{fontSize:"clamp(42px,6vw,68px)", margin:"16px 0"}}>Choose a learning journey.</h1>
         <p style={{color:"var(--muted)", maxWidth:650, lineHeight:1.7}}>
-          Every session uses the supplied synthetic cohort profile to tailor topic coverage,
+          Every session uses the candidate's completed curriculum profile to tailor topic coverage,
           difficulty and follow-up direction.
         </p>
+
+        {/* Framework Overview Cards at top of candidate selection */}
+        <div className="candidate-framework-overview">
+          <div className="framework-card">
+            <div className="framework-header">
+              <GraduationCap size={20} className="framework-icon" />
+              <div>
+                <h3>31-Day Curriculum</h3>
+                <span className="framework-badge">Curriculum-Aligned</span>
+              </div>
+            </div>
+            <p>The interview uses the candidate's completed curriculum and eligible technical areas.</p>
+          </div>
+
+          <div className="framework-card">
+            <div className="framework-header">
+              <Sparkles size={20} className="framework-icon" />
+              <div>
+                <h3>Required Core Questions</h3>
+                <span className="framework-badge">8 Minimum Questions</span>
+              </div>
+            </div>
+            <p>The interview contains a minimum set of core questions with adaptive follow-ups.</p>
+          </div>
+
+          <div className="framework-card">
+            <div className="framework-header">
+              <Gauge size={20} className="framework-icon" />
+              <div>
+                <h3>Readiness Dimensions</h3>
+                <span className="framework-badge">6 Assessment Pillars</span>
+              </div>
+            </div>
+            <p>Evaluates Technical Knowledge, Problem Solving, System Design, Production Thinking, Communication, and Practical Experience.</p>
+          </div>
+        </div>
+
         <div className="candidate-grid">
           {candidates.map((c, i) => (
             <button
@@ -59,11 +96,6 @@ export default function Candidates() {
               </div>
             </button>
           ))}
-        </div>
-        <div className="candidate-summary">
-          <div><GraduationCap/><b>31</b><span>curriculum days</span></div>
-          <div><Sparkles/><b>08</b><span>required core questions</span></div>
-          <div><Gauge/><b>4+</b><span>readiness dimensions</span></div>
         </div>
       </main>
     </div>

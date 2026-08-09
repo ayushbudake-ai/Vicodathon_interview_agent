@@ -36,7 +36,7 @@ router.post("/quote", async (req, res) => {
 });
 
 router.post("/start", async (req, res) => {
-  const { candidateId } = req.body || {};
+  const { candidateId, domain, difficulty } = req.body || {};
   const candidate = getCandidateProfile(candidateId) || { member: { id: candidateId || "CAND-001", name: "Candidate", jobRole: "AI Engineer" } };
   let eligibleTopics = analyzeCandidateCurriculum(candidate.member?.id)?.eligibleTopics || [];
   
@@ -51,7 +51,7 @@ router.post("/start", async (req, res) => {
     ];
   }
 
-  const session = createInterviewSession(candidate.member?.id || candidateId);
+  const session = createInterviewSession(candidate.member?.id || candidateId, domain, difficulty);
   interviewSessionService.activateSession(session.sessionId);
   try {
     const response = await generateInterviewResponse({ candidate, eligibleTopics, session });
@@ -59,6 +59,8 @@ router.post("/start", async (req, res) => {
     return res.status(201).json({
       sessionId: session.sessionId,
       candidateId: session.candidateId,
+      domain: session.domain,
+      difficulty: session.difficulty,
       candidateProfile: { id: candidate.member.id, name: candidate.member.name, role: candidate.member.jobRole },
       question,
       provider: aiConfiguration()
@@ -75,10 +77,11 @@ router.get("/:sessionId", (req, res) => {
   return res.json({
     sessionId: session.sessionId,
     candidateId: session.candidateId,
+    domain: session.domain || "Backend Development",
+    difficulty: session.difficulty || "Advanced",
     candidateProfile: { id: candidate.member.id, name: candidate.member.name, role: candidate.member.jobRole },
     status: session.status,
     phase: session.phase,
-    difficulty: session.difficulty,
     currentQuestion: session.currentQuestion,
     currentTopic: session.currentTopic,
     questionCount: session.questions.length,

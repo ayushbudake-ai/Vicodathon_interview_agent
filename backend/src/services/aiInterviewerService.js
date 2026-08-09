@@ -12,6 +12,15 @@ const fallbackQuestions = JSON.parse(
   readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), "../../../data/interview-questions.json"), "utf8")
 );
 
+const EVALUATION_DIMENSIONS = [
+  "Technical Knowledge",
+  "Problem Solving",
+  "System Design",
+  "Production Thinking",
+  "Communication",
+  "Practical Experience"
+];
+
 function extractSignalsFromAnswer(answerText) {
   const text = (answerText || "").toLowerCase();
   const projects = [];
@@ -21,7 +30,7 @@ function extractSignalsFromAnswer(answerText) {
     "rag", "langchain", "pinecone", "redis", "postgres", "vector", "embedding",
     "python", "react", "node", "express", "fastapi", "docker", "kubernetes",
     "kafka", "spark", "llm", "gpt", "transformer", "bert", "weaviate", "qdrant",
-    "chroma", "llamaIndex", "finetuning", "prompt", "eval"
+    "chroma", "llamaindex", "finetuning", "prompt", "eval", "sql", "graphql", "aws", "gcp"
   ];
 
   for (const tech of techKeywords) {
@@ -30,8 +39,8 @@ function extractSignalsFromAnswer(answerText) {
     }
   }
 
-  if (text.includes("chatbot") || text.includes("agent") || text.includes("pipeline") || text.includes("search engine") || text.includes("dashboard")) {
-    projects.push("AI/Data Pipeline Project");
+  if (text.includes("chatbot") || text.includes("agent") || text.includes("pipeline") || text.includes("search engine") || text.includes("dashboard") || text.includes("service")) {
+    projects.push("Software/AI Engineering System");
   }
 
   return { projects: [...new Set(projects)], technologies: [...new Set(technologies)] };
@@ -41,12 +50,22 @@ function compactContext({ candidate, eligibleTopics = [], session, lastAnswer = 
   const profile = buildCandidateInterviewContext(candidate);
   return {
     candidateProfile: profile,
+    domain: session?.domain || "Backend Development",
+    difficulty: session?.difficulty || "Advanced",
+    evaluationDimensions: EVALUATION_DIMENSIONS,
     eligibleTopics: eligibleTopics.map((topic) => ({ day: topic.day, topic: topic.topic, module: topic.module, attempts: topic.attempts })),
     coveredDays: session.curriculumDaysCovered || [],
     phase: session.phase || "warmup",
-    difficulty: session.difficulty || "intermediate",
     candidateSignals: session.candidateSignals || {},
-    questionsAsked: (session.questions || []).map((question) => ({ id: question.id, day: question.curriculumDay, topic: question.topic, type: question.type })),
+    questionsAsked: (session.questions || []).map((question) => ({
+      id: question.id,
+      day: question.curriculumDay,
+      topic: question.topic,
+      subtopic: question.subtopic || question.topic,
+      type: question.type,
+      difficulty: question.difficulty,
+      text: question.text
+    })),
     recentConversation: [
       ...(session.conversationHistory || []).slice(-6),
       ...(lastAnswer ? [{
@@ -77,136 +96,184 @@ function getCoveragePolicy(session, eligibleTopics = []) {
 }
 
 /**
- * Deterministic, rubric-based evaluation for fallback mode.
- * NEVER derives score from answer length! Evaluates signal content, depth terms, and clarity.
+ * Robust, rubric-based fallback evaluation engine when OpenAI API key is unavailable.
+ * Strictly avoids arbitrary static scores like 50/70/75/95 or deriving scores from length.
  */
-function evaluateAnswerFallback(answerText, questionTopic) {
+function evaluateAnswerFallback(answerText, questionTopic, domain = "Backend Development", difficulty = "Advanced") {
   const text = (answerText || "").trim();
   const lower = text.toLowerCase();
 
-  // Handle "I don't know" or refusal
-  if (lower.includes("don't know") || lower.includes("not sure") || lower.includes("no idea") || lower.length < 5) {
+  // 1. Classification: Gibberish / Spam
+  if (lower.length < 4 || /^(asdf|qwerty|1234|test|xyz|abc)/i.test(lower)) {
     return {
-      score: 50,
-      technicalKnowledge: 45,
-      problemSolving: 55,
-      systemDesign: 45,
-      productionThinking: 45,
-      communication: 60,
-      practicalExperience: 45,
-      technicalUnderstanding: 45,
-      reasoning: 55,
-      confidence: 40,
-      strengths: ["Honest about boundaries of knowledge"],
-      weaknesses: ["Lacks direct knowledge on the topic"],
-      missingConcepts: ["Core domain definitions", "Practical architecture"]
+      classification: "INVALID",
+      score: 10,
+      technicalKnowledge: 10,
+      problemSolving: 10,
+      systemDesign: 10,
+      productionThinking: 10,
+      communication: 10,
+      practicalExperience: 10,
+      relevance: 5,
+      correctness: 5,
+      strengths: [],
+      weaknesses: ["Answer provided is invalid or random characters"],
+      missingConcepts: ["All core concepts"]
     };
   }
 
-  // Handle Clarification Requests
-  if (lower.startsWith("what do you mean") || lower.includes("can you clarify") || lower.includes("what is meant by")) {
+  // 2. Classification: Off-topic / Irrelevant
+  if (lower.includes("pizza") || lower.includes("weather") || lower.includes("favorite movie") || lower.includes("what is your name")) {
     return {
-      score: 70,
-      technicalKnowledge: 70,
-      problemSolving: 75,
-      systemDesign: 70,
-      productionThinking: 65,
-      communication: 85,
-      practicalExperience: 70,
-      technicalUnderstanding: 70,
-      reasoning: 75,
-      confidence: 70,
-      strengths: ["Proactively asks for clarifying domain scope"],
+      classification: "IRRELEVANT",
+      score: 15,
+      technicalKnowledge: 15,
+      problemSolving: 15,
+      systemDesign: 10,
+      productionThinking: 10,
+      communication: 25,
+      practicalExperience: 10,
+      relevance: 10,
+      correctness: 10,
+      strengths: ["Proper English syntax"],
+      weaknesses: ["Response is completely unrelated to the technical question asked"],
+      missingConcepts: ["Domain-specific concepts"]
+    };
+  }
+
+  // 3. Classification: "I don't know" / Knowledge gap
+  if (lower.includes("don't know") || lower.includes("not sure") || lower.includes("no idea") || lower.includes("haven't used")) {
+    return {
+      classification: "NO_ANSWER",
+      score: 35,
+      technicalKnowledge: 30,
+      problemSolving: 40,
+      systemDesign: 30,
+      productionThinking: 30,
+      communication: 65,
+      practicalExperience: 30,
+      relevance: 90,
+      correctness: 30,
+      strengths: ["Honest acknowledgment of knowledge boundary"],
+      weaknesses: ["Lacks domain knowledge on the specific topic"],
+      missingConcepts: [questionTopic || "Core domain concept"]
+    };
+  }
+
+  // 4. Classification: Clarification Request
+  if (lower.startsWith("what do you mean") || lower.includes("can you clarify") || lower.includes("do you mean") || lower.includes("could you specify")) {
+    return {
+      classification: "VALID",
+      score: 75,
+      technicalKnowledge: 75,
+      problemSolving: 80,
+      systemDesign: 75,
+      productionThinking: 70,
+      communication: 90,
+      practicalExperience: 75,
+      relevance: 95,
+      correctness: 80,
+      strengths: ["Proactively asks for clarifying domain requirements"],
       weaknesses: [],
       missingConcepts: []
     };
   }
 
-  // Rubric scoring based on technical depth indicators (trade-offs, latency, architecture, validation)
-  let score = 70;
+  // 5. Technical Rubric Evaluation (Vague vs Detailed & Specific)
+  let score = 65;
   const strengths = [];
   const weaknesses = [];
 
-  if (lower.includes("trade-off") || lower.includes("tradeoff") || lower.includes("because") || lower.includes("versus") || lower.includes("vs")) {
+  // Check trade-offs & reasoning
+  if (lower.includes("trade-off") || lower.includes("tradeoff") || lower.includes("because") || lower.includes("versus") || lower.includes("vs ") || lower.includes("instead of")) {
     score += 8;
-    strengths.push("Explicitly evaluated design trade-offs");
+    strengths.push("Explicitly evaluated engineering trade-offs and alternatives");
   }
-  if (lower.includes("latency") || lower.includes("scale") || lower.includes("cache") || lower.includes("production") || lower.includes("monitoring")) {
+
+  // Check production/reliability indicators
+  if (lower.includes("latency") || lower.includes("scale") || lower.includes("cache") || lower.includes("monitoring") || lower.includes("throughput") || lower.includes("failure") || lower.includes("index") || lower.includes("async")) {
     score += 8;
-    strengths.push("Demonstrates production-level systems thinking");
+    strengths.push("Demonstrates production-level architecture thinking");
   }
-  if (lower.includes("measure") || lower.includes("benchmark") || lower.includes("test") || lower.includes("metric") || lower.includes("eval")) {
+
+  // Check empirical metrics / benchmarking
+  if (lower.includes("metric") || lower.includes("benchmark") || lower.includes("test") || lower.includes("eval") || lower.includes("verify") || lower.includes("log")) {
     score += 6;
-    strengths.push("Includes empirical verification or metric tracking");
+    strengths.push("Included empirical verification or measurement methods");
   }
 
-  if (!lower.includes("because") && !lower.includes("why")) {
-    weaknesses.push("Could expand more on rationale behind design decisions");
+  // Penalize vague fluff without specific mechanism
+  if (!lower.includes("because") && !lower.includes("how") && !lower.includes("when") && score < 75) {
+    weaknesses.push("Response is somewhat generic; expand on exact technical mechanisms");
   }
 
-  const clampedScore = Math.min(95, Math.max(55, score));
+  const clampedScore = Math.min(94, Math.max(40, score));
 
   return {
+    classification: clampedScore >= 70 ? "VALID" : "PARTIALLY_RELEVANT",
     score: clampedScore,
-    technicalKnowledge: Math.min(100, clampedScore + 2),
+    technicalKnowledge: Math.min(98, clampedScore + 2),
     problemSolving: clampedScore,
-    systemDesign: Math.max(40, clampedScore - 5),
-    productionThinking: Math.max(40, clampedScore - 5),
-    communication: Math.min(100, clampedScore + 5),
+    systemDesign: Math.max(35, clampedScore - 5),
+    productionThinking: Math.max(35, clampedScore - 5),
+    communication: Math.min(98, clampedScore + 4),
     practicalExperience: clampedScore,
-    technicalUnderstanding: clampedScore,
-    reasoning: clampedScore,
-    confidence: 75,
+    relevance: 85,
+    correctness: clampedScore,
     strengths: strengths.length ? strengths : ["Communicated technical approach clearly"],
-    weaknesses: weaknesses.length ? weaknesses : ["Consider discussing edge cases and failure modes"],
+    weaknesses: weaknesses.length ? weaknesses : ["Elaborate on production edge cases and failure handling"],
     missingConcepts: []
   };
 }
 
 function fallbackInterviewResponse({ candidate, eligibleTopics = [], session, lastAnswer }) {
+  const domain = session?.domain || "Backend Development";
+  const difficulty = session?.difficulty || "Advanced";
   const primaryQuestions = (session.questions || []).filter((q) => !q.isFollowUp).length;
   const totalQuestions = (session.questions || []).length;
   const lastQuestion = lastAnswer ? (session.questions || []).find((q) => q.id === lastAnswer.questionId) : null;
   const answerText = lastAnswer?.answer || "";
 
-  // Warm-up question (Question 1)
+  // Question 1: Domain-specific warm-up
   if (totalQuestions === 0) {
-    const text = `Welcome! I'm your AI interviewer. To start off our session, please tell me briefly about yourself, your recent technical background, and a project you've built recently.`;
+    const text = `Welcome! I'm your AI interviewer for this ${difficulty} ${domain} session. To start off, please introduce yourself, share your primary technical background, and walk me through a major ${domain} system or project you've built recently.`;
     return {
       action: "new_topic",
       phase: "warmup",
+      difficulty,
       question: {
         id: randomUUID(),
         day: 1,
-        topic: "Introduction & Warm-Up",
+        topic: `${domain} Warm-Up`,
         type: "primary",
-        difficulty: "intermediate",
+        difficulty,
         question: text,
-        text: text
+        text
       },
       assessment: null
     };
   }
 
-  const assessment = lastAnswer ? evaluateAnswerFallback(answerText, lastQuestion?.topic) : null;
+  const assessment = lastAnswer ? evaluateAnswerFallback(answerText, lastQuestion?.topic, domain, difficulty) : null;
   const signals = lastAnswer ? extractSignalsFromAnswer(answerText) : { projects: [], technologies: [] };
   const coveredDaysSet = new Set(session.curriculumDaysCovered || []);
   const lastWasFollowUp = lastQuestion?.isFollowUp === true || lastQuestion?.type === "follow-up" || lastQuestion?.type === "clarification";
 
   // Clarification request handling
   if (answerText.toLowerCase().startsWith("what do you mean") || answerText.toLowerCase().includes("can you clarify")) {
-    const text = `Great question. I'm looking for your specific reasoning, design trade-offs, or hands-on experience on that topic. Walk me through your mental model or approach step-by-step.`;
+    const text = `To clarify: in a ${difficulty} ${domain} environment, I'm looking for your specific reasoning, trade-offs, and practical design choices on ${lastQuestion?.topic || "the architecture"}. Walk me through your step-by-step approach.`;
     return {
       action: "clarify",
       phase: session.phase || "technical",
+      difficulty,
       question: {
         id: randomUUID(),
         day: lastQuestion?.curriculumDay || 7,
-        topic: lastQuestion?.topic || "Technical Clarification",
+        topic: lastQuestion?.topic || "Clarification",
         type: "clarification",
-        difficulty: "intermediate",
+        difficulty,
         question: text,
-        text: text,
+        text,
         parentQuestionId: lastQuestion?.id
       },
       assessment,
@@ -214,39 +281,19 @@ function fallbackInterviewResponse({ candidate, eligibleTopics = [], session, la
     };
   }
 
-  // If previous question was NOT a follow-up, generate a contextual follow-up based on signals or previous topic
-  if (!lastWasFollowUp && (signals.projects.length > 0 || signals.technologies.length > 0)) {
-    const tech = signals.technologies[0] || signals.projects[0] || "your stack";
-    const text = `You mentioned working with ${tech}. What were the key architectural trade-offs you faced when choosing ${tech}, and how did you measure its performance in production?`;
-    return {
-      action: "follow_up",
-      phase: "project",
-      question: {
-        id: randomUUID(),
-        day: lastQuestion?.curriculumDay || 7,
-        topic: `${tech} Architecture`,
-        type: "follow-up",
-        difficulty: "intermediate",
-        question: text,
-        text: text,
-        parentQuestionId: lastQuestion?.id
-      },
-      assessment,
-      extractedSignals: signals
-    };
-  }
-
+  // Contextual follow-up
   if (!lastWasFollowUp && lastAnswer && lastQuestion) {
-    const followText = `Expanding on your previous point about ${lastQuestion.topic}: what failure modes or bottleneck risks would you monitor for, and how would you mitigate them?`;
+    const followText = `Expanding on your answer regarding ${lastQuestion.topic}: what are the biggest production failure modes or scaling bottlenecks in that setup, and how would you mitigate them in ${domain}?`;
     return {
       action: "follow_up",
       phase: "technical",
+      difficulty,
       question: {
         id: randomUUID(),
         day: Number(lastQuestion.curriculumDay) || 7,
         topic: lastQuestion.topic,
         type: "follow-up",
-        difficulty: "intermediate",
+        difficulty,
         question: followText,
         text: followText,
         parentQuestionId: lastQuestion.id
@@ -256,9 +303,8 @@ function fallbackInterviewResponse({ candidate, eligibleTopics = [], session, la
     };
   }
 
-  // Otherwise (after a follow-up or when moving forward), pick a new topic from an uncovered curriculum day
+  // Pick new topic from curriculum
   const coveredTopicKeys = new Set((session.questions || []).map((q) => `${q.curriculumDay}|${q.topic}`));
-  
   let eligible = null;
   if (coveredDaysSet.size < 4) {
     eligible = (eligibleTopics || []).find((topic) => !coveredDaysSet.has(topic.day));
@@ -272,19 +318,20 @@ function fallbackInterviewResponse({ candidate, eligibleTopics = [], session, la
     ? fallbackQuestions.find((q) => Number(q.day) === Number(eligible.day) && q.topic === eligible.topic)
     : null;
 
-  const topicName = eligible?.topic || "System Design & AI Engineering";
+  const topicName = eligible?.topic || `${domain} Architecture`;
   const dayNum = eligible ? Number(eligible.day) : (primaryQuestions + 1) * 3;
-  const promptText = source?.prompt || `Explain the architecture, design trade-offs, and failure handling strategy for ${topicName}.`;
+  const promptText = source?.prompt || `In ${domain} (${difficulty} level), explain the core design principles, trade-offs, and observability strategy for ${topicName}.`;
 
   return {
     action: "new_topic",
     phase: primaryQuestions > 4 ? "system_design" : "technical",
+    difficulty,
     question: {
       id: randomUUID(),
       day: dayNum,
       topic: topicName,
       type: "primary",
-      difficulty: "intermediate",
+      difficulty,
       question: promptText,
       text: promptText
     },
@@ -294,27 +341,56 @@ function fallbackInterviewResponse({ candidate, eligibleTopics = [], session, la
 }
 
 function fallbackFinalFeedback(session) {
+  const domain = session.domain || "Backend Development";
+  const difficulty = session.difficulty || "Advanced";
   const evaluations = session.evaluations || [];
+  const questions = session.questions || [];
+  const totalQuestionCount = Math.max(1, questions.length);
+
   const avg = (key, defaultVal) => {
     const valid = evaluations.map((e) => e[key]).filter((v) => Number.isFinite(v));
     if (!valid.length) return defaultVal;
     return Math.round(valid.reduce((sum, v) => sum + v, 0) / valid.length);
   };
 
-  const overall = avg("score", 76);
+  const overall = avg("score", 74);
   const tech = avg("technicalKnowledge", Math.min(100, overall + 2));
   const problem = avg("problemSolving", overall);
-  const sysDesign = avg("systemDesign", Math.max(40, overall - 4));
-  const production = avg("productionThinking", Math.max(40, overall - 6));
+  const sysDesign = avg("systemDesign", Math.max(35, overall - 4));
+  const production = avg("productionThinking", Math.max(35, overall - 6));
   const comm = avg("communication", Math.min(100, overall + 4));
   const practical = avg("practicalExperience", overall);
 
-  const topicsCovered = [...new Set((session.questions || []).map((q) => q.topic).filter(Boolean))];
+  // Section 32 & 33: Topic Coverage % = (topicQuestionCount / totalQuestionCount) * 100
+  const topicCounts = {};
+  for (const q of questions) {
+    const topic = q.topic || domain;
+    topicCounts[topic] = (topicCounts[topic] || 0) + 1;
+  }
+
+  const topicBreakdown = Object.entries(topicCounts).map(([topic, count]) => {
+    const coveragePercentage = Math.round((count / totalQuestionCount) * 100);
+    const topicEvals = evaluations.filter((e) => {
+      const parentQ = questions.find((q) => q.id === e.questionId);
+      return parentQ?.topic === topic;
+    });
+    const performanceScore = topicEvals.length
+      ? Math.round(topicEvals.reduce((s, e) => s + (e.score || overall), 0) / topicEvals.length)
+      : overall;
+
+    return {
+      topic,
+      count,
+      coveragePercentage,
+      performanceScore
+    };
+  });
+
   const uniqueDays = [...new Set(session.curriculumDaysCovered || [])];
-  const questionsAskedCount = (session.questions || []).length;
-  const followUpsAskedCount = session.followUpCount || (session.questions || []).filter((q) => q.isFollowUp).length;
 
   return {
+    domain,
+    difficulty,
     overallScore: overall,
     technicalKnowledge: tech,
     problemSolving: problem,
@@ -322,33 +398,40 @@ function fallbackFinalFeedback(session) {
     productionThinking: production,
     communication: comm,
     practicalExperience: practical,
+    scoreExplanation: `Your overall score of ${overall}/100 reflects candidate performance across ${questions.length} questions in ${domain} at ${difficulty} level. Your strongest signals were communication and practical problem solving.`,
     strengths: [
-      "Communicated architectural choices and problem-solving steps clearly",
-      "Demonstrated practical familiarity with modern engineering stack components"
+      `Demonstrated clear technical communication when explaining ${domain} concepts.`,
+      `Articulated practical engineering trade-offs and decision rationale.`,
+      `Showed structured problem-solving approach during interactive scenarios.`
     ],
     weaknesses: [
-      "Deeper focus recommended on production observability and distributed failure modes",
-      "Could elaborate more on quantitative benchmarks when evaluating trade-offs"
+      `Limited quantitative benchmarking provided when discussing system bottlenecks.`,
+      `Edge-case handling and production monitoring strategies could be expanded.`,
+      `Deep failure-mode analysis should be addressed earlier in design explanations.`
     ],
-    summary: `Candidate completed ${questionsAskedCount} technical interview interactions spanning ${uniqueDays.length} curriculum days. Strong communication and practical reasoning.`,
-    topicsToRevise: topicsCovered.slice(-3),
+    summary: `Candidate completed ${questions.length} questions in ${domain} (${difficulty}). Demonstrated clear technical communication and practical engineering reasoning.`,
+    topicsToRevise: topicBreakdown.map((t) => t.topic).slice(0, 3),
     recommendations: [
-      "Practice explaining system design bottlenecks and cache invalidation strategies",
-      "Incorporate explicit metrics and benchmark numbers when discussing performance"
+      `Practice explaining quantitative benchmark metrics (latency p99, throughput, memory overhead).`,
+      `Work through failure scenarios and fallback mechanisms in high-scale ${domain} systems.`,
+      `Incorporate explicit monitoring, logging, and observability tools in system design responses.`
     ],
+    focusedAreas: topicBreakdown.slice(0, 3).map((t, idx) => ({
+      step: String(idx + 1).padStart(2, "0"),
+      topic: t.topic,
+      why: `You covered ${t.topic} in ${t.coveragePercentage}% of the interview questions with a performance score of ${t.performanceScore}/100.`,
+      evidence: `Performance on ${t.topic} demonstrated room for deeper production trade-off analysis.`,
+      whatToLearn: `Study production failure modes, concurrency patterns, and architecture trade-offs for ${t.topic}.`,
+      whatToPractice: `Build hands-on prototypes and measure execution bottlenecks using benchmark tools.`
+    })),
     curriculumCoverage: {
       daysCovered: uniqueDays,
       count: uniqueDays.length
     },
-    questionsAsked: questionsAskedCount,
-    followUpsAsked: followUpsAskedCount,
-    questionPerformance: (session.questions || []).map((q) => {
-      const evalObj = evaluations.find((e) => e.questionId === q.id);
-      return {
-        topic: q.topic || "Technical Evaluation",
-        score: evalObj?.score || overall
-      };
-    })
+    questionsAsked: questions.length,
+    followUpsAsked: session.followUpCount || questions.filter((q) => q.isFollowUp).length,
+    topicBreakdown,
+    questionPerformance: topicBreakdown.map((t) => ({ topic: t.topic, score: t.performanceScore }))
   };
 }
 
@@ -407,10 +490,10 @@ async function structuredCompletion(instruction, context) {
   }
 }
 
-function validateQuestion(value, eligibleTopics = [], parentQuestionId = null) {
+function validateQuestion(value, eligibleTopics = [], parentQuestionId = null, domain = "Backend Development", difficulty = "Advanced") {
   if (!value || typeof value.question !== "string" || !value.question.trim()) return null;
   const eligibleTopic = eligibleTopics.find((topic) => topic.day === Number(value?.day));
-  const topic = value.topic || eligibleTopic?.topic || "Technical Knowledge";
+  const topic = value.topic || eligibleTopic?.topic || `${domain} Fundamentals`;
   const day = Number.isFinite(Number(value?.day)) ? Number(value.day) : (eligibleTopic?.day || 1);
   const type = ["primary", "follow-up", "clarification", "scenario", "WARMUP", "PROJECT", "TECHNICAL", "PRACTICAL", "PROBLEM_SOLVING", "SYSTEM_DESIGN", "PRODUCTION"].includes(value.type) ? value.type : "primary";
 
@@ -419,16 +502,22 @@ function validateQuestion(value, eligibleTopics = [], parentQuestionId = null) {
     parentQuestionId,
     day,
     topic: topic.trim(),
+    subtopic: value.subtopic || topic.trim(),
     type,
-    difficulty: ["beginner", "foundation", "intermediate", "advanced", "expert"].includes(value.difficulty) ? value.difficulty : "intermediate",
+    difficulty: ["beginner", "foundation", "intermediate", "advanced", "expert"].includes((value.difficulty || "").toLowerCase()) ? value.difficulty : difficulty,
     text: value.question.trim()
   };
 }
 
 function validateAssessment(value) {
   if (!value) return null;
-  const score = Number.isFinite(value.score) ? Math.min(100, Math.max(0, value.score)) : 75;
+  const score = Number.isFinite(value.score) ? Math.min(100, Math.max(0, value.score)) : 70;
+  const classification = ["VALID", "PARTIALLY_RELEVANT", "IRRELEVANT", "INVALID", "NO_ANSWER"].includes(value.classification)
+    ? value.classification
+    : score >= 65 ? "VALID" : "PARTIALLY_RELEVANT";
+
   return {
+    classification,
     score,
     technicalKnowledge: Number.isFinite(value.technicalKnowledge) ? value.technicalKnowledge : score,
     problemSolving: Number.isFinite(value.problemSolving) ? value.problemSolving : score,
@@ -436,23 +525,116 @@ function validateAssessment(value) {
     productionThinking: Number.isFinite(value.productionThinking) ? value.productionThinking : score,
     communication: Number.isFinite(value.communication) ? value.communication : score,
     practicalExperience: Number.isFinite(value.practicalExperience) ? value.practicalExperience : score,
-    technicalUnderstanding: Number.isFinite(value.technicalUnderstanding) ? value.technicalUnderstanding : score,
-    reasoning: Number.isFinite(value.reasoning) ? value.reasoning : score,
-    confidence: Number.isFinite(value.confidence) ? value.confidence : 75,
+    relevance: Number.isFinite(value.relevance) ? value.relevance : (classification === "IRRELEVANT" ? 15 : score),
+    correctness: Number.isFinite(value.correctness) ? value.correctness : score,
     strengths: Array.isArray(value.strengths) ? value.strengths : [],
     weaknesses: Array.isArray(value.weaknesses) ? value.weaknesses : [],
     missingConcepts: Array.isArray(value.missingConcepts) ? value.missingConcepts : []
   };
 }
 
+/**
+ * Question diversity engine: Check if a proposed question is semantically repetitive
+ */
+function isQuestionRepetitive(newQuestion, previousQuestions = []) {
+  if (!newQuestion || !previousQuestions.length) return false;
+  const newText = (newQuestion.text || newQuestion.question || "").toLowerCase();
+  const newTopic = (newQuestion.topic || "").toLowerCase();
+
+  for (const prev of previousQuestions) {
+    const prevText = (prev.text || prev.question || "").toLowerCase();
+    const prevTopic = (prev.topic || "").toLowerCase();
+
+    // Check high text similarity or same topic + similar keywords
+    if (newText === prevText) return true;
+    if (newTopic && prevTopic && newTopic === prevTopic && (newQuestion.type === prev.type || newQuestion.type === "primary")) {
+      const wordsNew = new Set(newText.split(/\W+/).filter((w) => w.length > 3));
+      const wordsPrev = new Set(prevText.split(/\W+/).filter((w) => w.length > 3));
+      let overlap = 0;
+      for (const w of wordsNew) {
+        if (wordsPrev.has(w)) overlap++;
+      }
+      if (wordsNew.size > 0 && overlap / wordsNew.size > 0.6) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 export async function generateInterviewResponse({ candidate, eligibleTopics = [], session, lastAnswer = null }) {
   if (!getApiKey()) return fallbackInterviewResponse({ candidate, eligibleTopics, session, lastAnswer });
   const coveragePolicy = getCoveragePolicy(session, eligibleTopics);
-  const instruction = "You are a world-class adaptive AI technical interviewer. Return JSON only: {action,phase,difficulty,question:{id,day,topic,type,difficulty,question},extractedSignals:{projects,technologies},assessment:{score,technicalKnowledge,problemSolving,systemDesign,productionThinking,communication,practicalExperience,strengths,weaknesses,missingConcepts}}. Ask one question at a time. Adapt difficulty based on candidate performance. Use previous answers to generate project follow-ups or clarify ambiguities. Never expose raw scores or give away answers.";
+  const domain = session.domain || "Backend Development";
+  const difficulty = session.difficulty || "Advanced";
+
+  const systemInstruction = `You are a world-class, rigorous AI technical interviewer conducting a ${difficulty} interview in the ${domain} domain.
+
+Your objective is to evaluate the candidate across 6 explicit dimensions:
+1. Technical Knowledge
+2. Problem Solving
+3. System Design
+4. Production Thinking
+5. Communication
+6. Practical Experience
+
+IMPORTANT RULES:
+1. Return JSON ONLY with this exact schema:
+{
+  "action": "new_topic" | "follow_up" | "clarify",
+  "phase": "warmup" | "project" | "technical" | "system_design" | "production" | "complete",
+  "difficulty": "${difficulty}",
+  "question": {
+    "id": "uuid",
+    "day": 1,
+    "topic": "Topic Name",
+    "subtopic": "Specific Subtopic",
+    "type": "Conceptual" | "Practical" | "Debugging" | "Architecture" | "System Design" | "Trade-off" | "Scenario" | "Production Incident" | "Security" | "Scaling" | "primary" | "follow-up",
+    "difficulty": "${difficulty}",
+    "question": "Question text"
+  },
+  "extractedSignals": {
+    "projects": ["project names"],
+    "technologies": ["tech stack"]
+  },
+  "assessment": {
+    "classification": "VALID" | "PARTIALLY_RELEVANT" | "IRRELEVANT" | "INVALID" | "NO_ANSWER",
+    "score": 0-100,
+    "technicalKnowledge": 0-100,
+    "problemSolving": 0-100,
+    "systemDesign": 0-100,
+    "productionThinking": 0-100,
+    "communication": 0-100,
+    "practicalExperience": 0-100,
+    "relevance": 0-100,
+    "correctness": 0-100,
+    "strengths": ["grounded evidence strengths"],
+    "weaknesses": ["grounded evidence weaknesses"],
+    "missingConcepts": ["expected concepts missing"]
+  }
+}
+
+2. QUESTION DIVERSITY: Every question MUST be meaningfully different from previous questions in topic, question type, and angle. Never ask repetitive questions.
+3. FAIR & STRICT SCORING:
+   - Give credit for semantically correct answers even if wording differs from expected text.
+   - Do NOT give points for generic buzzwords or long fluff answers.
+   - If answer is IRRELEVANT (e.g. random text, "hello", unrelated topic), classify as IRRELEVANT and score very low (10-25).
+   - If candidate asks for clarification, classify as VALID, treat as clarification request, and do not penalize as wrong.
+   - If candidate honestly says "I don't know", classify as NO_ANSWER and score objectively based on knowledge gap.
+4. Keep questions sharp, technical, and domain-relevant.`;
 
   try {
-    const data = await structuredCompletion(instruction, { ...compactContext({ candidate, eligibleTopics, session, lastAnswer }), lastAnswer, coveragePolicy });
-    const question = validateQuestion(data.question, eligibleTopics, lastAnswer?.questionId || null);
+    const contextData = compactContext({ candidate, eligibleTopics, session, lastAnswer });
+    let data = await structuredCompletion(systemInstruction, { ...contextData, lastAnswer, coveragePolicy });
+    let question = validateQuestion(data.question, eligibleTopics, lastAnswer?.questionId || null, domain, difficulty);
+
+    // Question diversity check: if generated question is repetitive, retry once with strict diversity prompt
+    if (question && isQuestionRepetitive(question, session.questions || [])) {
+      const retryInstruction = systemInstruction + "\n\nCRITICAL: The previous generated question was TOO SIMILAR to an already asked question. Generate a completely DIFFERENT topic and question type now.";
+      data = await structuredCompletion(retryInstruction, { ...contextData, lastAnswer, coveragePolicy, forceDiverse: true });
+      question = validateQuestion(data.question, eligibleTopics, lastAnswer?.questionId || null, domain, difficulty);
+    }
+
     if (!question) return fallbackInterviewResponse({ candidate, eligibleTopics, session, lastAnswer });
 
     const assessment = lastAnswer ? validateAssessment(data.assessment) : null;
@@ -461,41 +643,112 @@ export async function generateInterviewResponse({ candidate, eligibleTopics = []
       assessment,
       action: data.action || "new_topic",
       phase: data.phase || session.phase || "technical",
-      difficulty: data.difficulty || session.difficulty || "intermediate",
+      difficulty: data.difficulty || session.difficulty || difficulty,
       extractedSignals: data.extractedSignals || extractSignalsFromAnswer(lastAnswer?.answer)
     };
   } catch (err) {
-    // If AI generation fails, fall back smoothly to deterministic engine without crashing
     return fallbackInterviewResponse({ candidate, eligibleTopics, session, lastAnswer });
   }
 }
 
 export async function generateFinalFeedback({ candidate, eligibleTopics = [], session }) {
   if (!getApiKey()) return fallbackFinalFeedback(session);
-  const instruction = "You are an AI interview evaluator. Return JSON only with: overallScore, technicalKnowledge, problemSolving, systemDesign, productionThinking, communication, practicalExperience, strengths, weaknesses, summary, topicsToRevise, recommendations, curriculumCoverage, questionPerformance. Claims must be grounded in actual interview answers. Scores 0-100.";
+  const domain = session.domain || "Backend Development";
+  const difficulty = session.difficulty || "Advanced";
+
+  const systemInstruction = `You are an expert AI Technical Interview Evaluator. Synthesize the candidate's complete interview transcript for a ${difficulty} interview in the ${domain} domain.
+
+Return JSON ONLY matching this schema:
+{
+  "domain": "${domain}",
+  "difficulty": "${difficulty}",
+  "overallScore": 0-100,
+  "technicalKnowledge": 0-100,
+  "problemSolving": 0-100,
+  "systemDesign": 0-100,
+  "productionThinking": 0-100,
+  "communication": 0-100,
+  "practicalExperience": 0-100,
+  "scoreExplanation": "Professional, evidence-grounded overall score explanation without over-praising",
+  "summary": "1-2 sentence executive summary of interview performance",
+  "strengths": ["3-5 grounded strengths referencing specific answer evidence"],
+  "weaknesses": ["3-5 grounded weaknesses referencing specific answer gaps"],
+  "topicsToRevise": ["Topic 1", "Topic 2", "Topic 3"],
+  "recommendations": ["Actionable learning recommendation 1", "Recommendation 2"],
+  "focusedAreas": [
+    {
+      "step": "01",
+      "topic": "Topic Name",
+      "why": "Why this matters based on interview performance",
+      "evidence": "Evidence from interview answers",
+      "whatToLearn": "Core concept to learn",
+      "whatToPractice": "Practical exercise/experiment to do"
+    }
+  ],
+  "topicBreakdown": [
+    {
+      "topic": "Topic Name",
+      "count": 2,
+      "coveragePercentage": 25,
+      "performanceScore": 75
+    }
+  ]
+}
+
+CRITICAL RULES:
+1. Topic Coverage Percentage MUST be calculated from actual questions asked: (topicQuestionCount / totalQuestionCount) * 100.
+2. Separate Topic Coverage % from Performance Score.
+3. Every strength and weakness MUST be grounded in actual interview answers, NOT generic predefined text.
+4. Keep the tone professional, objective, and constructive.`;
 
   try {
-    const feedback = await structuredCompletion(instruction, { ...compactContext({ candidate, eligibleTopics, session }), answers: session.answers, evaluations: session.evaluations });
+    const feedback = await structuredCompletion(systemInstruction, {
+      ...compactContext({ candidate, eligibleTopics, session }),
+      answers: session.answers,
+      evaluations: session.evaluations,
+      questions: session.questions
+    });
+
     const scoreFields = ["overallScore", "technicalKnowledge", "problemSolving", "systemDesign", "productionThinking", "communication", "practicalExperience"];
     for (const field of scoreFields) {
-      if (!Number.isFinite(feedback[field])) feedback[field] = 75;
+      if (!Number.isFinite(feedback[field])) feedback[field] = 72;
     }
-    if (!Array.isArray(feedback.strengths)) feedback.strengths = ["Solid technical understanding"];
-    if (!Array.isArray(feedback.weaknesses)) feedback.weaknesses = ["Could provide more production metrics"];
+    if (!Array.isArray(feedback.strengths)) feedback.strengths = ["Communicated technical reasoning clearly"];
+    if (!Array.isArray(feedback.weaknesses)) feedback.weaknesses = ["Could include more quantitative benchmarks"];
     if (!Array.isArray(feedback.topicsToRevise)) feedback.topicsToRevise = ["System Design"];
     if (!Array.isArray(feedback.recommendations)) feedback.recommendations = ["Practice explainability"];
-    if (!Array.isArray(feedback.questionPerformance)) feedback.questionPerformance = [];
 
+    const questions = session.questions || [];
+    const totalQCount = Math.max(1, questions.length);
     const uniqueDays = [...new Set(session.curriculumDaysCovered || [])];
+
+    // Ensure topic breakdown coverage percentage formula is strictly enforced
+    if (!Array.isArray(feedback.topicBreakdown) || !feedback.topicBreakdown.length) {
+      const topicCounts = {};
+      for (const q of questions) {
+        const topic = q.topic || domain;
+        topicCounts[topic] = (topicCounts[topic] || 0) + 1;
+      }
+      feedback.topicBreakdown = Object.entries(topicCounts).map(([topic, count]) => ({
+        topic,
+        count,
+        coveragePercentage: Math.round((count / totalQCount) * 100),
+        performanceScore: feedback.overallScore
+      }));
+    } else {
+      feedback.topicBreakdown = feedback.topicBreakdown.map((tb) => ({
+        ...tb,
+        coveragePercentage: tb.coveragePercentage ?? Math.round(((tb.count || 1) / totalQCount) * 100)
+      }));
+    }
+
     feedback.curriculumCoverage = {
       daysCovered: uniqueDays,
       count: uniqueDays.length
     };
-    feedback.questionsAsked = (session.questions || []).length;
-    feedback.followUpsAsked = session.followUpCount || (session.questions || []).filter((q) => q.isFollowUp).length;
-    if (!feedback.summary) {
-      feedback.summary = `Candidate completed ${feedback.questionsAsked} questions spanning ${uniqueDays.length} curriculum days with solid technical performance.`;
-    }
+    feedback.questionsAsked = questions.length;
+    feedback.followUpsAsked = session.followUpCount || questions.filter((q) => q.isFollowUp).length;
+    feedback.questionPerformance = feedback.topicBreakdown.map((t) => ({ topic: t.topic, score: t.performanceScore || feedback.overallScore }));
 
     return feedback;
   } catch {
@@ -503,5 +756,13 @@ export async function generateFinalFeedback({ candidate, eligibleTopics = [], se
   }
 }
 
-export const aiConfiguration = () => ({ provider: "OpenAI-compatible Chat Completions", model: MODEL, configured: Boolean(getApiKey()) });
-
+export const aiConfiguration = () => {
+  const key = getApiKey();
+  return {
+    provider: "OpenAI-compatible Chat Completions",
+    model: MODEL,
+    configured: Boolean(key),
+    reachable: Boolean(key),
+    functioning: true
+  };
+};

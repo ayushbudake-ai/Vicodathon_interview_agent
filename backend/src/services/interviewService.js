@@ -6,14 +6,15 @@ export class InterviewSessionService {
     this.sessions = new Map();
   }
 
-  createSession(candidateId) {
+  createSession(candidateId, domain = "Backend Development", difficulty = "Advanced") {
     const session = {
       sessionId: randomUUID(),
       candidateId,
+      domain: domain || "Backend Development",
+      difficulty: difficulty || "Advanced",
       startedAt: new Date().toISOString(),
       status: "created",
       phase: "warmup", // warmup -> project -> technical -> system_design -> production -> complete
-      difficulty: "intermediate", // beginner | intermediate | advanced | expert
       questions: [],
       answers: [],
       evaluations: [],
@@ -193,7 +194,7 @@ export class InterviewSessionService {
 export const interviewSessionService = new InterviewSessionService();
 
 // Compatibility exports for the existing interview route.
-export const createInterviewSession = (candidateId) => interviewSessionService.createSession(candidateId);
+export const createInterviewSession = (candidateId, domain, difficulty) => interviewSessionService.createSession(candidateId, domain, difficulty);
 export const getInterviewSession = (sessionId) => interviewSessionService.getSession(sessionId);
 export const addQuestionToSession = (sessionId, question) => interviewSessionService.addQuestion(sessionId, question);
 export const addAnswerToSession = (sessionId, answer) => interviewSessionService.addAnswer(sessionId, answer);

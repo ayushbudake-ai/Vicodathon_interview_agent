@@ -4,8 +4,8 @@ export async function fetchInterviewSession(sessionId) {
   return api.getSession(sessionId);
 }
 
-export async function startInterviewSession(candidateId) {
-  return api.startInterview(candidateId);
+export async function startInterviewSession(candidateId, domain, difficulty) {
+  return api.startInterview(candidateId, domain, difficulty);
 }
 
 export async function submitAnswerToSession(sessionId, questionId, answer) {
