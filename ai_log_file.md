@@ -1,189 +1,195 @@
-1. AI Usage Log
+# Detailed AI Development Log
 
-## Project
+## AI Interview Agent — ViCodathon
 
-**AI Interview Agent — ABTalks Vibe Code Hackathon**
+This file contains the detailed development history of AI-assisted work performed during the creation of the project.
 
-## AI Tool Used
+For the official summarized AI usage record, see:
 
-**ChatGPT**
-
-2.Purpose
-
-We used ChatGPT mainly as a development and planning assistant while working on the AI Interview Agent. It helped us understand the hackathon requirements, think through the product idea, plan the system architecture, divide the work between team members, and organize our development process.
+`AI_USAGE_LOG.md`
 
 ---
 
-Session 1 — Understanding the Hackathon Rules
+## Purpose
 
-We first used ChatGPT to understand how the hackathon evaluation works and what could cause a submission to be rejected.
+AI-assisted development was used throughout the project for:
 
-It helped us understand:
-
-* The eligibility requirements.
-* The authenticity review.
-* How the judging process works.
-* What happens in the Live Steer Challenge.
-* Why we need a public repository and working demo.
-* Why maintaining a genuine Git history and AI usage records is important.
-
-This helped us plan our development process before starting the actual implementation.
-
----
-
-Session 2 — Planning Our AI-Assisted Workflow
-
-We discussed how our three-person team could divide the work and use AI efficiently.
-
-ChatGPT suggested separating the work into:
-
-* Frontend and UI development.
-* Backend and API development.
-* AI logic, integration, testing, and documentation.
-
-We also discussed building the project feature by feature instead of trying to generate the entire application at once.
-
-Another important recommendation was to make regular, meaningful Git commits throughout development rather than creating one large commit at the end.
-
----
-Session 3 — Choosing the Problem
-
-We discussed the available problem statements and decided to work on the **AI Interview Agent**.
-
-ChatGPT helped us break down what the problem was actually asking for.
-
-The main idea we identified was:
-
-> Build the interviewer, not just a list of interview questions.
-
-We identified the key capabilities the product should demonstrate:
-
-* A real multi-turn conversation.
-* Questions based on the candidate's learning journey.
-* Adaptive questioning.
-* Intelligent follow-up questions.
-* Memory of previous answers.
-* Candidate-specific assessment.
-* Useful feedback at the end.
+* Understanding the challenge requirements
+* Planning the system architecture
+* Designing the candidate and curriculum analysis
+* Implementing interview functionality
+* Developing adaptive follow-ups
+* Improving answer evaluation
+* Developing the results and feedback experience
+* Debugging
+* Testing
+* Deployment troubleshooting
+* Documentation
 
 ---
 
-Session 4 — Planning the Interview Agent
+## Development History
 
-We then discussed how the AI Interview Agent could be structured internally.
+### Phase 1 — Challenge Understanding
 
-ChatGPT suggested breaking the system into smaller responsibilities instead of having one large AI prompt handle everything.
+**Objective:** Understand the AI Interview Agent requirements and determine the major components needed for implementation.
 
-The planned components include:
+**AI assistance:**
 
-* Candidate profile analysis.
-* Curriculum retrieval.
-* Interview planning.
-* Question generation.
-* Follow-up question generation.
-* Answer evaluation.
-* Conversation memory.
-* Final feedback generation.
+[INSERT THE ACTUAL PROMPTS / AI CONVERSATIONS USED DURING THIS PHASE]
 
-The goal is to use the candidate's completed topics and previous answers to make the interview feel personalized instead of following a fixed questionnaire.
+**Outcome:**
+
+The project was divided into candidate analysis, curriculum analysis, interview generation, conversation management, evaluation, feedback, API, and frontend components.
 
 ---
 
-Session 5 — Checking the Minimum Requirements
+### Phase 2 — Candidate & Curriculum Analysis
 
-We used ChatGPT to go through the official requirements one by one and make sure we understood what our application needs to do.
+**Objective:** Build the candidate-learning analysis layer.
 
-The requirements we identified were:
+**AI assistance:**
 
-* Conduct a conversational technical interview.
-* Ask at least 8 questions.
-* Cover at least 4 different curriculum days.
-* Generate follow-up questions based on previous answers.
-* Maintain conversation context.
-* Generate structured feedback at the end.
-* Expose the required HTTP endpoint from the Technical Specification.
+[INSERT ACTUAL PROMPTS USED]
 
-We also decided that the interview should react to the candidate's answers.
+**Outcome:**
 
-For example:
-
-* A strong answer can lead to a deeper technical question.
-* A weak answer can lead to a clarification or foundational question.
-* Previous answers should influence what the interviewer asks next.
-
-This is important because we want the experience to feel like an actual technical interview rather than a scripted quiz.
+The implementation analyzes candidate learning information and identifies curriculum content that can be used during the interview.
 
 ---
 
-## Session 6 — Planning the Website Experience
+### Phase 3 — Interview Generation
 
-Before focusing on the full backend and AI implementation, we planned the complete user experience.
+**Objective:** Generate technical interview questions based on the candidate's eligible curriculum.
 
-The planned flow is:
+**AI assistance:**
 
-1. Landing page.
-2. Candidate selection.
-3. Candidate profile and progress.
-4. Interview dashboard.
-5. Multi-turn interview.
-6. Final evaluation and feedback.
+[INSERT ACTUAL PROMPTS USED]
 
-We also planned features such as:
+**Outcome:**
 
-* Candidate progress.
-* Curriculum coverage.
-* Interview progress.
-* Current interview topic.
-* Skills being evaluated.
-* Chat-based conversation.
-* Follow-up questions.
-* Strengths and weaknesses.
-* Recommended areas for improvement.
-
-For the initial interface, we planned to use realistic mock data so that the complete user journey could be tested before connecting all the real AI functionality.
+Implemented candidate-aware and curriculum-aware interview question generation.
 
 ---
 
-Session 7 — GitHub and Documentation
+### Phase 4 — Adaptive Follow-Ups
 
-We also used ChatGPT to understand how we should organize the repository for the hackathon.
+**Objective:** Make the interview adaptive instead of using only a fixed question sequence.
 
-The main recommendations were:
+**AI assistance:**
 
-* Keep the repository public.
-* Make regular and meaningful commits.
-* Avoid putting the entire project into one final commit.
-* Maintain a clear README.
-* Maintain `PROMPTS.md` with the actual prompts used during development.
-* Maintain this AI Usage Log.
-* Keep the documentation consistent with the actual development process.
+[INSERT ACTUAL PROMPTS USED]
+
+**Outcome:**
+
+The system can generate follow-up questions based on the candidate's previous response.
 
 ---
 
-3.How We Used AI
+### Phase 5 — Conversation Context
 
-ChatGPT was used as an assistant for planning, understanding requirements, architecture discussions, and development guidance.
+**Objective:** Maintain relevant information throughout the interview.
 
-The team is responsible for reviewing the suggestions, integrating the relevant ideas into the project, testing the implementation, and making the final development decisions.
+**AI assistance:**
 
-We are keeping the AI usage documentation updated throughout the hackathon rather than creating the history after development is finished.
+[INSERT ACTUAL PROMPTS USED]
 
-## Current Status
+**Outcome:**
 
-At this stage, we have:
+Interview session information is maintained so later interactions can use previous questions and responses.
 
-* Understood the hackathon requirements.
-* Selected the AI Interview Agent problem.
-* Identified the core interview functionality.
-* Planned the system architecture.
-* Planned the website and user flow.
-* Divided the development responsibilities.
-* Set up our approach for Git and AI documentation.
+---
 
-The next development stages are focused on implementing the actual interview agent, backend API, curriculum and candidate data integration, adaptive questioning, conversation context, answer evaluation, and structured final feedback.
+### Phase 6 — Answer Evaluation
 
-Prompt Records
+**Objective:** Evaluate candidate answers.
 
-Detailed prompts used during development are maintained separately in `PROMPTS.md`.
+**AI assistance:**
 
-The prompt records correspond to the actual AI interactions used during the project and will be updated throughout development.
+[INSERT ACTUAL PROMPTS USED]
+
+**Outcome:**
+
+Implemented AI-assisted evaluation of candidate responses.
+
+---
+
+### Phase 7 — Structured Feedback
+
+**Objective:** Generate useful feedback after the interview.
+
+**AI assistance:**
+
+[INSERT ACTUAL PROMPTS USED]
+
+**Outcome:**
+
+Implemented structured results including competency evaluation, strengths, weaknesses, topic performance, and improvement recommendations.
+
+---
+
+### Phase 8 — Frontend
+
+**Objective:** Build the complete candidate-facing interview experience.
+
+**AI assistance:**
+
+[INSERT ACTUAL PROMPTS USED]
+
+**Outcome:**
+
+Implemented interview setup, interview interaction, progress tracking, and results presentation.
+
+---
+
+### Phase 9 — Testing & Debugging
+
+**Objective:** Verify functionality and identify implementation problems.
+
+**AI assistance:**
+
+[INSERT ACTUAL PROMPTS USED]
+
+**Outcome:**
+
+Used AI-assisted debugging and testing to identify and resolve implementation issues.
+
+---
+
+### Phase 10 — Deployment
+
+**Objective:** Connect and verify the deployed frontend and backend.
+
+**AI assistance:**
+
+[INSERT ACTUAL PROMPTS USED]
+
+**Outcome:**
+
+Used AI-assisted troubleshooting during deployment and frontend/backend integration.
+
+---
+
+### Phase 11 — Final Review
+
+**Objective:** Compare the implementation against the challenge requirements.
+
+**AI assistance:**
+
+[INSERT ACTUAL PROMPTS USED]
+
+**Outcome:**
+
+Reviewed the major functional requirements and prepared the project for final submission.
+
+---
+
+## Important Note
+
+The entries in this file should represent the actual AI-assisted development history.
+
+Original prompts should be preserved where possible rather than reconstructed or fabricated.
+
+For the official summarized AI usage record, refer to:
+
+`AI_USAGE_LOG.md`
