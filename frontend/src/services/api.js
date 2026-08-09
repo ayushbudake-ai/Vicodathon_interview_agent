@@ -8,8 +8,6 @@ async function request(path, options = {}) {
       ...options
     });
   } catch {
-    // fetch() throws (not a rejected response) on network failure/CORS block —
-    // this is almost always "the backend isn't running" or a wrong VITE_API_URL.
     throw new Error(
       `Can't reach the backend at ${API_BASE_URL}. Make sure the backend is running ` +
       `(cd backend && npm run dev) and that VITE_API_URL points to it.`
@@ -22,7 +20,7 @@ async function request(path, options = {}) {
       const body = await response.json();
       message = body.error || message;
     } catch {
-      // A non-JSON error response should still be actionable to the candidate.
+      // Non-JSON error
     }
     throw new Error(message);
   }
@@ -42,11 +40,13 @@ export const api = {
       method: "GET"
     }),
 
-  startInterview: (candidateId) =>
-    request("/interview/start", {
+  startInterview: (params) => {
+    const payload = typeof params === "object" ? params : { candidateId: params };
+    return request("/interview/start", {
       method: "POST",
-      body: JSON.stringify({ candidateId })
-    }),
+      body: JSON.stringify(payload)
+    });
+  },
 
   submitAnswer: (sessionId, questionId, answer) =>
     request("/interview/answer", {
@@ -60,4 +60,3 @@ export const api = {
       body: JSON.stringify({ sessionId })
     })
 };
-

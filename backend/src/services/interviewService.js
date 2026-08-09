@@ -1,19 +1,39 @@
 import { randomUUID } from "crypto";
 
-/** In-memory interview state. It is intentionally ephemeral until persistence is introduced. */
+/** In-memory interview state. */
 export class InterviewSessionService {
   constructor() {
     this.sessions = new Map();
   }
 
-  createSession(candidateId) {
+  createSession(candidateId, options = {}) {
+    const domain = options.domain || "AI / Machine Learning";
+    const role = options.role || "AI Engineer";
+    const experienceLevel = options.experienceLevel || "Intermediate";
+
     const session = {
       sessionId: randomUUID(),
       candidateId,
+      domain,
+      role,
+      experienceLevel,
       startedAt: new Date().toISOString(),
       status: "created",
       phase: "warmup", // warmup -> project -> technical -> system_design -> production -> complete
-      difficulty: "intermediate", // beginner | intermediate | advanced | expert
+      difficulty: experienceLevel.toLowerCase() === "beginner" ? "beginner" : experienceLevel.toLowerCase() === "advanced" ? "advanced" : experienceLevel.toLowerCase() === "expert" ? "expert" : "intermediate",
+      interviewPlan: {
+        domain,
+        role,
+        experienceLevel,
+        minimumQuestions: 8,
+        minimumCurriculumDays: 4,
+        targetCompetencies: [
+          "technicalKnowledge",
+          "problemSolving",
+          "systemDesign",
+          "productionThinking"
+        ]
+      },
       questions: [],
       answers: [],
       evaluations: [],
@@ -31,6 +51,7 @@ export class InterviewSessionService {
         strengths: [],
         weaknesses: []
       },
+      candidateClaims: [],
       skills: {
         technicalKnowledge: { score: null, confidence: "low" },
         problemSolving: { score: null, confidence: "low" },
@@ -65,9 +86,11 @@ export class InterviewSessionService {
       curriculumDay: Number.isFinite(question.curriculumDay) ? question.curriculumDay : (question.day ?? null),
       topic: question.topic ?? "Technical Discussion",
       type: question.type ?? "primary",
+      domain: question.domain ?? session.domain,
+      role: question.role ?? session.role,
       difficulty: question.difficulty ?? session.difficulty,
       parentQuestionId: question.parentQuestionId ?? null,
-      isFollowUp: question.isFollowUp === true || question.type === "follow-up",
+      isFollowUp: question.isFollowUp === true || question.type === "follow-up" || question.type === "clarification",
       createdAt: new Date().toISOString()
     };
     session.questions.push(storedQuestion);
@@ -148,6 +171,9 @@ export class InterviewSessionService {
       if (updates.candidateSignals.projects) session.candidateSignals.projects = [...new Set([...session.candidateSignals.projects, ...updates.candidateSignals.projects])];
       if (updates.candidateSignals.technologies) session.candidateSignals.technologies = [...new Set([...session.candidateSignals.technologies, ...updates.candidateSignals.technologies])];
     }
+    if (updates.candidateClaims) {
+      session.candidateClaims = [...session.candidateClaims, ...updates.candidateClaims];
+    }
     return session;
   }
 
@@ -172,6 +198,9 @@ export class InterviewSessionService {
     return {
       sessionId: session.sessionId,
       candidateId: session.candidateId,
+      domain: session.domain,
+      role: session.role,
+      experienceLevel: session.experienceLevel,
       status: session.status,
       phase: session.phase,
       difficulty: session.difficulty,
@@ -185,6 +214,7 @@ export class InterviewSessionService {
       currentTopic: session.currentTopic,
       followUpCount: session.followUpCount,
       candidateSignals: session.candidateSignals,
+      candidateClaims: session.candidateClaims,
       skills: session.skills
     };
   }
@@ -192,8 +222,8 @@ export class InterviewSessionService {
 
 export const interviewSessionService = new InterviewSessionService();
 
-// Compatibility exports for the existing interview route.
-export const createInterviewSession = (candidateId) => interviewSessionService.createSession(candidateId);
+// Compatibility exports
+export const createInterviewSession = (candidateId, options) => interviewSessionService.createSession(candidateId, options);
 export const getInterviewSession = (sessionId) => interviewSessionService.getSession(sessionId);
 export const addQuestionToSession = (sessionId, question) => interviewSessionService.addQuestion(sessionId, question);
 export const addAnswerToSession = (sessionId, answer) => interviewSessionService.addAnswer(sessionId, answer);
@@ -201,4 +231,3 @@ export const addEvaluationToSession = (sessionId, evaluation) => interviewSessio
 export const updateSessionCurrentTopic = (sessionId, topic) => interviewSessionService.updateCurrentTopic(sessionId, topic);
 export const getConversationContext = (sessionId) => interviewSessionService.getConversationContext(sessionId);
 export const finalizeSession = (sessionId) => interviewSessionService.completeSession(sessionId);
-

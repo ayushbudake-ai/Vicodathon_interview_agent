@@ -31,6 +31,9 @@ const toResults = (feedback = {}) => ({
   curriculumCoverage: feedback.curriculumCoverage || { daysCovered: [], count: 0 },
   questionsAsked: feedback.questionsAsked || 0,
   followUpsAsked: feedback.followUpsAsked || 0,
+  domain: feedback.domain || "AI / Machine Learning",
+  role: feedback.role || "AI Engineer",
+  experienceLevel: feedback.experienceLevel || "Intermediate",
   source: "live"
 });
 
@@ -70,6 +73,9 @@ export function useInterviewSession(candidate, explicitSessionId = null) {
         setSessionState((prev) => ({
           ...prev,
           sessionId: existingSession.sessionId,
+          domain: existingSession.domain || "AI / Machine Learning",
+          role: existingSession.role || "AI Engineer",
+          experienceLevel: existingSession.experienceLevel || "Intermediate",
           currentQuestion: currentQ,
           currentTopic: currentQ?.topic || "Technical Assessment",
           currentQuestionNumber: qAsked.length || 1,
@@ -91,7 +97,16 @@ export function useInterviewSession(candidate, explicitSessionId = null) {
         // Start brand new session
         setStatusState("STARTING");
         const candidateId = candidate?.originalId || candidate?.id || "CAND-001";
-        const response = await startInterviewSession(candidateId);
+        const domain = localStorage.getItem("selectedDomain") || "AI / Machine Learning";
+        const role = localStorage.getItem("selectedRole") || candidate?.role || "AI Engineer";
+        const experienceLevel = localStorage.getItem("selectedExperienceLevel") || "Intermediate";
+
+        const response = await startInterviewSession({
+          candidateId,
+          domain,
+          role,
+          experienceLevel
+        });
         if (!active) return;
 
         setAiSessionId(response.sessionId);
@@ -99,7 +114,12 @@ export function useInterviewSession(candidate, explicitSessionId = null) {
         setAiMode("live");
 
         const question = toQuestion(response.question);
-        setSessionState(createInitialInterviewState(candidate, question));
+        setSessionState({
+          ...createInitialInterviewState(candidate, question),
+          domain: response.domain || domain,
+          role: response.role || role,
+          experienceLevel: response.experienceLevel || experienceLevel
+        });
         setStatusState("QUESTION_READY");
       }
     } catch (err) {
@@ -226,4 +246,3 @@ export function useInterviewSession(candidate, explicitSessionId = null) {
     fetchFeedback
   };
 }
-

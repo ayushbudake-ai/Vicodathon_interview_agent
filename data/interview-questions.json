@@ -2,113 +2,191 @@
   {
     "id": 1,
     "day": 10,
+    "domain": "AI / Machine Learning",
     "topic": "Hybrid retrieval and relevance tuning",
     "prompt": "Walk me through how you would design a retrieval pipeline for a domain-specific assistant. What would you retrieve, and why?",
-    "follow": "Good. How would you decide whether semantic retrieval, keyword retrieval, or a hybrid strategy is the right choice?"
+    "follow": "Good. How would you decide whether semantic retrieval, keyword retrieval, or a hybrid strategy is the right choice?",
+    "keyConcepts": ["vector retrieval", "keyword search", "reranking", "hybrid search", "chunking"],
+    "requiredConcepts": ["hybrid strategy or reranking", "semantic similarity"]
   },
   {
     "id": 2,
     "day": 8,
+    "domain": "AI / Machine Learning",
     "topic": "Chroma, Pinecone, and retrieval basics",
     "prompt": "When would you choose a vector database over a traditional relational store for an AI application?",
-    "follow": "What trade-offs would you consider around indexing, metadata filtering, consistency, and latency?"
+    "follow": "What trade-offs would you consider around indexing, metadata filtering, consistency, and latency?",
+    "keyConcepts": ["approximate nearest neighbor", "high dimensional vectors", "metadata filtering", "latency vs accuracy"],
+    "requiredConcepts": ["high dimensional search", "similarity search vs exact match"]
   },
   {
     "id": 3,
     "day": 12,
+    "domain": "AI / Machine Learning",
     "topic": "Zero-shot, few-shot, and system prompts",
     "prompt": "How would you structure a system prompt so a model stays grounded and reliable in production?",
-    "follow": "How would you test whether that prompt change actually improves model behavior?"
+    "follow": "How would you test whether that prompt change actually improves model behavior?",
+    "keyConcepts": ["system role", "few-shot examples", "guardrails", "eval harness"],
+    "requiredConcepts": ["grounding instructions", "testing or evaluation metrics"]
   },
   {
     "id": 4,
     "day": 21,
+    "domain": "AI / Machine Learning",
     "topic": "Planning, tools, and protocol design",
     "prompt": "Describe an agentic workflow you would trust in a real product. What tools would the agent need?",
-    "follow": "If one of those tools fails, how should the agent recover without becoming unpredictable?"
+    "follow": "If one of those tools fails, how should the agent recover without becoming unpredictable?",
+    "keyConcepts": ["tool specification", "loop prevention", "error handling", "state machine"],
+    "requiredConcepts": ["tool execution feedback", "fallback or retry mechanism"]
   },
   {
     "id": 5,
     "day": 23,
+    "domain": "AI / Machine Learning",
     "topic": "Connecting agents to external tools and context sources via MCP",
     "prompt": "Explain how Model Context Protocol can connect an AI application to external tools or context sources.",
-    "follow": "What would you monitor to make sure context and tool handoffs remain reliable?"
+    "follow": "What would you monitor to make sure context and tool handoffs remain reliable?",
+    "keyConcepts": ["MCP servers", "JSON-RPC", "context transport", "tool schema"],
+    "requiredConcepts": ["decoupled protocol for context/tools", "schema contract"]
   },
   {
     "id": 6,
     "day": 28,
+    "domain": "AI / Machine Learning",
     "topic": "Docker, Kubernetes, observability",
     "prompt": "If you were shipping this AI system to production, what deployment concerns would you prioritize first?",
-    "follow": "How would you approach model versioning, rollback, latency, and observability?"
+    "follow": "How would you approach model versioning, rollback, latency, and observability?",
+    "keyConcepts": ["containerization", "horizontal pod autoscaling", "latency optimization", "model artifact store"],
+    "requiredConcepts": ["containerization or deployment pipeline", "observability or rollback"]
   },
   {
     "id": 7,
     "day": 16,
+    "domain": "AI / Machine Learning",
     "topic": "Endpoints, state, and orchestration",
     "prompt": "How would you design the backend state and API boundaries for a multi-turn AI application?",
-    "follow": "What would you persist, what would stay ephemeral, and how would you protect the API from failure or overload?"
+    "follow": "What would you persist, what would stay ephemeral, and how would you protect the API from failure or overload?",
+    "keyConcepts": ["session persistence", "ephemeral buffer", "rate limiting", "async processing"],
+    "requiredConcepts": ["state separation (db vs memory)", "overload prevention / rate limiting"]
   },
   {
     "id": 8,
     "day": 31,
+    "domain": "AI / Machine Learning",
     "topic": "Architecture synthesis and engineering trade-offs",
     "prompt": "Imagine you must explain your complete AI system to an engineering team. Walk through the architecture and the most important trade-offs.",
-    "follow": "What is the first production weakness you would improve if you had one more week?"
+    "follow": "What is the first production weakness you would improve if you had one more week?",
+    "keyConcepts": ["system architecture", "latency vs quality", "cost optimization", "bottlenecks"],
+    "requiredConcepts": ["end-to-end component flow", "explicit design trade-off"]
   },
   {
     "id": 9,
     "day": 1,
-    "topic": "VS Code, Python, and setup fundamentals",
-    "prompt": "How would you set up a reproducible Python development environment for an AI project, and why does that matter for a team?",
-    "follow": "What would you do differently if a teammate's environment produced different results from yours?"
+    "domain": "Web Development",
+    "topic": "Frontend Scaffolding & Component Design",
+    "prompt": "Walk me through how you structure a modern web application for maintainability and state management.",
+    "follow": "How do you decide between local component state, global context, and server state?",
+    "keyConcepts": ["component architecture", "state management", "props vs context", "custom hooks"],
+    "requiredConcepts": ["state management strategy", "component modularity"]
   },
   {
     "id": 10,
-    "day": 7,
-    "topic": "Embeddings, vector space, and similarity",
-    "prompt": "Explain what an embedding actually represents, and how you would choose a similarity metric for a given use case.",
-    "follow": "How would embeddings behave differently for short queries versus long documents, and how would you handle that?"
+    "day": 3,
+    "domain": "Web Development",
+    "topic": "DOM Optimization & Rendering Performance",
+    "prompt": "How do you diagnose and fix performance bottlenecks in a client-heavy React single-page application?",
+    "follow": "What specific tools and strategies do you use for profiling component re-renders?",
+    "keyConcepts": ["virtual DOM", "memoization", "lazy loading", "bundle size optimization"],
+    "requiredConcepts": ["re-render optimization (memo/useMemo)", "browser profiling"]
   },
   {
     "id": 11,
-    "day": 13,
-    "topic": "Tool schemas, function calling, and structured JSON outputs",
-    "prompt": "How would you design a function-calling schema so a model reliably produces valid, structured output?",
-    "follow": "What would you do if the model returned output that almost matched your schema but was subtly invalid?"
+    "day": 7,
+    "domain": "Web Development",
+    "topic": "API Integration & Client-Side Data Fetching",
+    "prompt": "How do you handle asynchronous data fetching, caching, and race conditions in modern web frontends?",
+    "follow": "How do you recover gracefully when an API request fails mid-user-interaction?",
+    "keyConcepts": ["AbortController", "optimistic updates", "stale-while-revalidate", "error boundaries"],
+    "requiredConcepts": ["async state management", "error boundary or fallback UI"]
   },
   {
     "id": 12,
-    "day": 18,
-    "topic": "Token streaming, SSE, and responsive chat UX",
-    "prompt": "Walk me through how you would implement streaming responses from an LLM to a chat UI.",
-    "follow": "How would you handle a dropped connection partway through a stream?"
+    "day": 10,
+    "domain": "Web Development",
+    "topic": "REST vs GraphQL API Design",
+    "prompt": "When designing API contracts for a complex frontend, how do you decide between REST endpoints and GraphQL schemas?",
+    "follow": "What trade-offs exist around over-fetching, caching, and backend complexity?",
+    "keyConcepts": ["over-fetching", "HTTP caching", "schema evolution", "client payload size"],
+    "requiredConcepts": ["payload optimization", "caching implications"]
   },
   {
     "id": 13,
-    "day": 20,
-    "topic": "Session memory, summarization, and context-window management",
-    "prompt": "How would you manage conversation memory for a long-running chat session without blowing the context window?",
-    "follow": "How would you decide what to summarize versus what to keep verbatim?"
+    "day": 16,
+    "domain": "Backend Development",
+    "topic": "Database Indexing & Query Optimization",
+    "prompt": "Explain how database indexing works under the hood and how you identify slow queries in production.",
+    "follow": "What are the trade-offs of adding index coverage on high-throughput write tables?",
+    "keyConcepts": ["B-Tree indexes", "EXPLAIN ANALYZE", "write amplification", "table scans"],
+    "requiredConcepts": ["index lookup mechanics", "write overhead trade-off"]
   },
   {
     "id": 14,
-    "day": 22,
-    "topic": "Coordinating multiple agents and delegating sub-tasks",
-    "prompt": "How would you coordinate multiple specialized agents on a single complex task?",
-    "follow": "How would you prevent agents from stepping on each other's work or looping indefinitely?"
+    "day": 18,
+    "domain": "Backend Development",
+    "topic": "Caching Strategies & Cache Invalidation",
+    "prompt": "How do you design a distributed caching layer using Redis for high-traffic backend services?",
+    "follow": "How do you handle cache invalidation, cache stampedes, and cache thundering herds?",
+    "keyConcepts": ["TTL", "cache invalidation", "mutex lock", "write-through vs cache-aside"],
+    "requiredConcepts": ["cache-aside or invalidation strategy", "stampede prevention"]
   },
   {
     "id": 15,
-    "day": 27,
-    "topic": "Prompt injection defense, data privacy, and safety guardrails",
-    "prompt": "How would you defend an LLM-powered application against prompt injection from untrusted content?",
-    "follow": "What guardrails would you add if that application also had access to sensitive user data?"
+    "day": 20,
+    "domain": "Backend Development",
+    "topic": "Session Management & Authentication Protocols",
+    "prompt": "Compare JWT-based stateless authentication with stateful session tokens for enterprise applications.",
+    "follow": "How do you handle immediate session revocation when using stateless JWT tokens?",
+    "keyConcepts": ["JWT", "token revocation", "refresh tokens", "session stores"],
+    "requiredConcepts": ["token vs session security model", "revocation strategy"]
   },
   {
     "id": 16,
+    "day": 27,
+    "domain": "Backend Development",
+    "topic": "API Security & OWASP Defense",
+    "prompt": "How do you protect backend microservices against common OWASP vulnerabilities like SQL injection and CSRF?",
+    "follow": "What rate-limiting and input validation mechanisms do you enforce at the API gateway layer?",
+    "keyConcepts": ["parameterized queries", "CSRF tokens", "rate limiting", "input validation"],
+    "requiredConcepts": ["parameterized queries / ORM sanitization", "rate limiting or token validation"]
+  },
+  {
+    "id": 17,
+    "day": 28,
+    "domain": "DevOps / Cloud",
+    "topic": "Containerization & Kubernetes Orchestration",
+    "prompt": "Walk me through how you design a multi-stage Docker build and deploy it to a Kubernetes cluster safely.",
+    "follow": "How do you configure liveness, readiness probes, and rolling updates to prevent downtime?",
+    "keyConcepts": ["multi-stage builds", "readiness probes", "rolling update", "zero downtime"],
+    "requiredConcepts": ["multi-stage Docker build", "probe configuration or zero-downtime strategy"]
+  },
+  {
+    "id": 18,
     "day": 29,
-    "topic": "Tracing, structured logging, and production monitoring for AI services",
-    "prompt": "What would you monitor in a production AI service to catch quality regressions before users notice?",
-    "follow": "How would you trace a single bad response back to the specific prompt, retrieval, or model version that caused it?"
+    "domain": "DevOps / Cloud",
+    "topic": "Distributed Tracing & Production Observability",
+    "prompt": "How do you set up distributed tracing across microservices to isolate latency spikes and failure cascades?",
+    "follow": "What correlation IDs and logging standards do you mandate for your microservice stack?",
+    "keyConcepts": ["OpenTelemetry", "correlation ID", "p99 latency", "structured logging"],
+    "requiredConcepts": ["correlation ID propagation", "OpenTelemetry or tracing pipeline"]
+  },
+  {
+    "id": 19,
+    "day": 31,
+    "domain": "Full Stack Development",
+    "topic": "Full Stack Architecture & High Availability",
+    "prompt": "Explain the architectural design for a high-availability full stack application serving global users.",
+    "follow": "How do you coordinate frontend deployment releases with database migration pipelines?",
+    "keyConcepts": ["CDN edge", "backward-compatible DB migrations", "blue-green deployment", "failover"],
+    "requiredConcepts": ["backward compatible DB migrations", "global CDN or load balancer setup"]
   }
 ]

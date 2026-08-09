@@ -59,9 +59,9 @@ export default function Results() {
         <div className="results-intro">
           <div>
             <div className="eyebrow"><Sparkles size={14} /> Comprehensive Evaluation</div>
-            <h1>Strong foundation.<br /><span>Clear actionable feedback.</span></h1>
+            <h1>{results.role || "Technical"} Evaluation Report<br /><span>{results.domain || "AI / Machine Learning"}</span></h1>
           </div>
-          <p>Based on your adaptive interview performance across technical depth, system design, and communication.</p>
+          <p>Evaluation profile: <strong>{results.role || "Role"}</strong> ({results.experienceLevel || "Level"} Level) · {results.domain || "Domain"}</p>
         </div>
 
         <section className="score-hero">
@@ -76,7 +76,7 @@ export default function Results() {
             <h2 data-testid="feedback-summary">
               {results.overall >= 80 ? "Exceptional Candidate" : results.overall >= 70 ? "Strong Technical Signal" : "Solid Progress"}
             </h2>
-            <p>{results.recommendation || "Your responses demonstrate clear technical reasoning across the interview topics."}</p>
+            <p>{results.summary || results.recommendation || "Your responses demonstrate clear technical reasoning across the interview topics."}</p>
           </div>
           <div className="score-stat">
             <strong>{results.curriculumCoverage?.count || results.curriculumCoverage?.daysCovered?.length || 0}</strong>
@@ -185,4 +185,3 @@ export default function Results() {
     </div>
   );
 }
-

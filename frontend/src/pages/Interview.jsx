@@ -26,7 +26,6 @@ export default function Interview() {
   const [answer, setAnswer] = useState("");
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
-  // Timer calculated based on session.startedAt so refresh doesn't reset time
   useEffect(() => {
     const updateElapsed = () => {
       if (!sessionState?.startedAt) return;
@@ -65,7 +64,7 @@ export default function Interview() {
       <header className="interview-header">
         <Logo />
         <div className="interview-center">
-          <span>TECHNICAL INTERVIEW</span>
+          <span>{sessionState?.domain || "TECHNICAL INTERVIEW"}</span>
           <div data-testid="interview-progress" className="question-track">
             <i style={{ width: `${Math.min(100, (questionNumber / totalQuestions) * 100)}%` }} />
           </div>
@@ -102,24 +101,24 @@ export default function Interview() {
 
           <div className="conversation-title">
             <div>
-              <span className="small-label">LIVE ADAPTIVE INTERVIEW</span>
+              <span className="small-label">{sessionState?.domain?.toUpperCase() || "DOMAIN"} ASSESSMENT</span>
               <h1>Think out loud. <span>Go deep.</span></h1>
               <p className="interview-context">
-                {candidate?.name || "Candidate"} · {sessionState?.phase || "technical"} · {sessionState?.currentTopic || "Preparing session"} · {aiMode === "live" ? "AI Live" : "Offline Engine"}
+                {candidate?.name || "Candidate"} · {sessionState?.role || "Engineer"} · {sessionState?.experienceLevel || "Intermediate"} · {sessionState?.currentTopic || "Preparing session"}
               </p>
             </div>
             <Badge>Question {questionNumber} / {totalQuestions}</Badge>
           </div>
 
           <div className="messages">
-            {/* Show Initial Loading Screen if session is starting */}
+            {/* Initial Loading Screen */}
             {(statusState === "INITIALIZING" || statusState === "STARTING") && !messages.length && (
               <div className="message-row ai">
                 <div className="ai-avatar"><Sparkles size={17} /></div>
                 <div className="message-content">
-                  <div className="message-meta"><strong>AI Interviewer</strong><span>Initializing</span></div>
+                  <div className="message-meta"><strong>AI Interviewer</strong><span>Starting session...</span></div>
                   <div className="message-bubble ai">
-                    Connecting to AI interviewer and generating opening question...
+                    Connecting to AI interviewer and generating opening question for {sessionState?.role || "Candidate"} ({sessionState?.domain || "Domain"})...
                   </div>
                 </div>
               </div>
@@ -157,7 +156,7 @@ export default function Interview() {
                 <div className="message-content">
                   <div className="message-meta">
                     <strong>AI Interviewer</strong>
-                    <span>{statusState === "SUBMITTING_ANSWER" ? "Analyzing your answer..." : "Preparing next question..."}</span>
+                    <span>{statusState === "SUBMITTING_ANSWER" ? "Evaluating your technical answer..." : "Generating domain follow-up..."}</span>
                   </div>
                   <div className="message-bubble ai typing"><i /><i /><i /></div>
                 </div>
@@ -171,7 +170,7 @@ export default function Interview() {
                 <div className="message-content">
                   <div className="message-meta"><strong>AI Interviewer</strong><span>Session Complete</span></div>
                   <div className="message-bubble ai" style={{ borderColor: "#22c55e", background: "rgba(34, 197, 94, 0.1)" }}>
-                    Thank you! That completes our technical interview. Click <strong>"View Results"</strong> above to see your competency report.
+                    Thank you! You have completed the technical interview for <strong>{sessionState?.role}</strong> ({sessionState?.domain}). Click <strong>"View Results"</strong> above to inspect your structured feedback report.
                   </div>
                 </div>
               </div>
@@ -211,15 +210,15 @@ export default function Interview() {
         <aside className="journey-sidebar">
           <div className="sidebar-top">
             <div>
-              <span className="small-label">YOUR JOURNEY</span>
-              <h2>Interview map</h2>
+              <span className="small-label">CURRICULUM & DOMAIN MAP</span>
+              <h2>{sessionState?.domain || "Interview Map"}</h2>
             </div>
             <button className="sidebar-toggle"><PanelRightOpen size={17} /></button>
           </div>
 
           <div className="sidebar-progress">
             <div>
-              <span>Interview progress · {coveredDays.length} topics covered</span>
+              <span>Interview progress · {coveredDays.length} days covered</span>
               <strong>{Math.round((questionNumber / totalQuestions) * 100)}%</strong>
             </div>
             <div className="progress-track">
@@ -248,4 +247,3 @@ export default function Interview() {
     </div>
   );
 }
-

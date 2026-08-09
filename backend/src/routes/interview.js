@@ -36,22 +36,21 @@ router.post("/quote", async (req, res) => {
 });
 
 router.post("/start", async (req, res) => {
-  const { candidateId } = req.body || {};
-  const candidate = getCandidateProfile(candidateId) || { member: { id: candidateId || "CAND-001", name: "Candidate", jobRole: "AI Engineer" } };
+  const { candidateId, domain, role, experienceLevel } = req.body || {};
+  const candidate = getCandidateProfile(candidateId) || { member: { id: candidateId || "CAND-001", name: "Candidate", jobRole: role || "AI Engineer" } };
   let eligibleTopics = analyzeCandidateCurriculum(candidate.member?.id)?.eligibleTopics || [];
   
-  // Fallback eligible topics if candidate profile doesn't have 4 documented days
   if (!eligibleTopics.length) {
     eligibleTopics = [
-      { day: 1, topic: "AI Fundamentals & Prompt Engineering", module: "Foundation", completed: true },
-      { day: 7, topic: "Embeddings & Vector Databases", module: "RAG & Vector Search", completed: true },
-      { day: 10, topic: "Retrieval & Matching Engine", module: "RAG & Vector Search", completed: true },
-      { day: 14, topic: "LLM Fine-Tuning & Evaluation", module: "Advanced AI", completed: true },
-      { day: 20, topic: "Production AI Architecture & Observability", module: "Production Systems", completed: true }
+      { day: 1, topic: "Environment, Tooling & Setup", module: "Foundation", completed: true },
+      { day: 7, topic: "Core Architecture & Data Representation", module: "Core Engineering", completed: true },
+      { day: 10, topic: "Retrieval & Query Engine", module: "Data Processing", completed: true },
+      { day: 16, topic: "Backend APIs & State Management", module: "System Design", completed: true },
+      { day: 28, topic: "Production Deployment & Observability", module: "Production Systems", completed: true }
     ];
   }
 
-  const session = createInterviewSession(candidate.member?.id || candidateId);
+  const session = createInterviewSession(candidate.member?.id || candidateId, { domain, role, experienceLevel });
   interviewSessionService.activateSession(session.sessionId);
   try {
     const response = await generateInterviewResponse({ candidate, eligibleTopics, session });
@@ -59,7 +58,10 @@ router.post("/start", async (req, res) => {
     return res.status(201).json({
       sessionId: session.sessionId,
       candidateId: session.candidateId,
-      candidateProfile: { id: candidate.member.id, name: candidate.member.name, role: candidate.member.jobRole },
+      domain: session.domain,
+      role: session.role,
+      experienceLevel: session.experienceLevel,
+      candidateProfile: { id: candidate.member.id, name: candidate.member.name, role: session.role || candidate.member.jobRole },
       question,
       provider: aiConfiguration()
     });
@@ -71,11 +73,14 @@ router.post("/start", async (req, res) => {
 router.get("/:sessionId", (req, res) => {
   const session = getInterviewSession(req.params.sessionId);
   if (!session) return res.status(404).json({ error: "Session not found" });
-  const candidate = getCandidateProfile(session.candidateId) || { member: { id: session.candidateId, name: "Candidate", jobRole: "AI Engineer" } };
+  const candidate = getCandidateProfile(session.candidateId) || { member: { id: session.candidateId, name: "Candidate", jobRole: session.role || "AI Engineer" } };
   return res.json({
     sessionId: session.sessionId,
     candidateId: session.candidateId,
-    candidateProfile: { id: candidate.member.id, name: candidate.member.name, role: candidate.member.jobRole },
+    domain: session.domain,
+    role: session.role,
+    experienceLevel: session.experienceLevel,
+    candidateProfile: { id: candidate.member.id, name: candidate.member.name, role: session.role || candidate.member.jobRole },
     status: session.status,
     phase: session.phase,
     difficulty: session.difficulty,
@@ -103,14 +108,14 @@ router.post("/answer", async (req, res) => {
     return res.status(409).json({ error: "This question has already been answered." });
   }
 
-  const candidate = getCandidateProfile(session.candidateId) || { member: { id: session.candidateId, name: "Candidate", jobRole: "AI Engineer" } };
+  const candidate = getCandidateProfile(session.candidateId) || { member: { id: session.candidateId, name: "Candidate", jobRole: session.role || "AI Engineer" } };
   let eligibleTopics = analyzeCandidateCurriculum(candidate.member?.id)?.eligibleTopics || [];
   if (!eligibleTopics.length) {
     eligibleTopics = [
-      { day: 1, topic: "AI Fundamentals & Prompt Engineering", module: "Foundation", completed: true },
-      { day: 7, topic: "Embeddings & Vector Databases", module: "RAG & Vector Search", completed: true },
-      { day: 10, topic: "Retrieval & Matching Engine", module: "RAG & Vector Search", completed: true },
-      { day: 14, topic: "LLM Fine-Tuning & Evaluation", module: "Advanced AI", completed: true }
+      { day: 1, topic: "Environment & Setup", module: "Foundation", completed: true },
+      { day: 7, topic: "Core Architecture", module: "Core Engineering", completed: true },
+      { day: 10, topic: "Retrieval & Query Engine", module: "Data Processing", completed: true },
+      { day: 16, topic: "Backend APIs", module: "System Design", completed: true }
     ];
   }
 
@@ -173,7 +178,7 @@ router.all(["/feedback", "/:sessionId/feedback"], async (req, res) => {
     return res.status(404).json({ error: "Session not found" });
   }
 
-  const candidate = getCandidateProfile(session.candidateId) || { member: { id: session.candidateId, name: "Candidate", jobRole: "AI Engineer" } };
+  const candidate = getCandidateProfile(session.candidateId) || { member: { id: session.candidateId, name: "Candidate", jobRole: session.role || "AI Engineer" } };
   const eligibleTopics = analyzeCandidateCurriculum(candidate.member?.id)?.eligibleTopics || [];
   try {
     const feedback = await generateFinalFeedback({ candidate, eligibleTopics, session });
@@ -194,4 +199,3 @@ router.post("/finish", (req, res) => {
 });
 
 export default router;
-
