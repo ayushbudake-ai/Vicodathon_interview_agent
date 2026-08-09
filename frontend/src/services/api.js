@@ -58,6 +58,12 @@ export const api = {
     request("/interview/feedback", {
       method: "POST",
       body: JSON.stringify({ sessionId })
+    }),
+
+  chatEvaluation: (sessionId, candidateId, message, history = []) =>
+    request(`/interview/${sessionId}/evaluation/chat`, {
+      method: "POST",
+      body: JSON.stringify({ candidateId, message, history })
     })
 };
 

@@ -739,6 +739,90 @@ strong { font-family: "IBM Plex Sans", sans-serif; }
   flex-wrap: wrap;
   margin-top: 8px;
 }
+.chatbot-card {
+  margin-top: 18px;
+  padding: 26px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: rgba(8, 33, 47, 0.6);
+}
+.chatbot-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0;
+}
+.chat-suggestion {
+  border: 1px solid rgba(95, 141, 255, 0.2);
+  background: rgba(95, 141, 255, 0.12);
+  color: #9dd6ff;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 11px;
+}
+.chatbot-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.chatbot-empty-state {
+  border: 1px dashed rgba(95, 141, 255, 0.25);
+  border-radius: 12px;
+  padding: 16px;
+  color: #7b95a2;
+  font-size: 12px;
+}
+.chat-message {
+  border: 1px solid rgba(95, 141, 255, 0.15);
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: rgba(3, 20, 31, 0.7);
+}
+.chat-message strong {
+  display: block;
+  font-size: 10px;
+  color: #5ccdf4;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+.chat-message p {
+  margin: 0;
+  color: #d7e5eb;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.chat-message.candidate {
+  border-color: rgba(91, 225, 180, 0.2);
+  background: rgba(7, 36, 31, 0.7);
+}
+.chat-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.chat-sources span {
+  font-size: 10px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(95, 141, 255, 0.12);
+  color: #8cb5ff;
+}
+.chatbot-form {
+  display: flex;
+  gap: 10px;
+}
+.chatbot-form input {
+  flex: 1;
+  border: 1px solid rgba(95, 141, 255, 0.2);
+  border-radius: 10px;
+  background: rgba(3, 20, 31, 0.8);
+  color: white;
+  padding: 12px 14px;
+  font-size: 12px;
+}
 .chip {
   font-size: 10px;
   padding: 4px 10px;

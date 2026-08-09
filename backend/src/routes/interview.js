@@ -4,6 +4,7 @@ import { analyzeCandidateCurriculum } from "../analysis/eligibleTopicService.js"
 import { addAnswerToSession, createInterviewSession, finalizeSession, getInterviewSession, interviewSessionService } from "../services/interviewService.js";
 import { addEvaluationToSession, addQuestionToSession } from "../services/interviewService.js";
 import { aiConfiguration, generateFinalFeedback, generateInterviewQuote, generateInterviewResponse } from "../services/aiInterviewerService.js";
+import { buildEvaluationReport, buildLegacyFeedback, generateEvaluationChatReply, getCandidateContext, validateEvaluationOwnership } from "../services/evaluationService.js";
 
 function sendAiError(res, error) {
   const status = error.code === "AI_NOT_CONFIGURED" ? 503 : error.code === "AI_INVALID_RESPONSE" ? 502 : 503;
@@ -36,7 +37,7 @@ router.post("/quote", async (req, res) => {
 });
 
 router.post("/start", async (req, res) => {
-  const { candidateId, domain, difficulty } = req.body || {};
+  const { candidateId, domain, difficulty, role, experienceLevel } = req.body || {};
   const candidate = getCandidateProfile(candidateId) || { member: { id: candidateId || "CAND-001", name: "Candidate", jobRole: "AI Engineer" } };
   let eligibleTopics = analyzeCandidateCurriculum(candidate.member?.id)?.eligibleTopics || [];
   
@@ -51,7 +52,7 @@ router.post("/start", async (req, res) => {
     ];
   }
 
-  const session = createInterviewSession(candidate.member?.id || candidateId, domain, difficulty);
+  const session = createInterviewSession(candidate.member?.id || candidateId, domain, difficulty, role, experienceLevel);
   interviewSessionService.activateSession(session.sessionId);
   try {
     const response = await generateInterviewResponse({ candidate, eligibleTopics, session });
@@ -61,6 +62,8 @@ router.post("/start", async (req, res) => {
       candidateId: session.candidateId,
       domain: session.domain,
       difficulty: session.difficulty,
+      role: session.role || role || candidate.member.jobRole,
+      experienceLevel: session.experienceLevel || experienceLevel || null,
       candidateProfile: { id: candidate.member.id, name: candidate.member.name, role: candidate.member.jobRole },
       question,
       provider: aiConfiguration()
@@ -79,6 +82,8 @@ router.get("/:sessionId", (req, res) => {
     candidateId: session.candidateId,
     domain: session.domain || "Backend Development",
     difficulty: session.difficulty || "Advanced",
+    role: session.role || null,
+    experienceLevel: session.experienceLevel || null,
     candidateProfile: { id: candidate.member.id, name: candidate.member.name, role: candidate.member.jobRole },
     status: session.status,
     phase: session.phase,
@@ -176,11 +181,63 @@ router.all(["/feedback", "/:sessionId/feedback"], async (req, res) => {
     return res.status(404).json({ error: "Session not found" });
   }
 
-  const candidate = getCandidateProfile(session.candidateId) || { member: { id: session.candidateId, name: "Candidate", jobRole: "AI Engineer" } };
+  if (session.status !== "completed") {
+    return res.status(400).json({ error: "Interview is not completed" });
+  }
+
+  const candidate = getCandidateContext(session.candidateId);
   const eligibleTopics = analyzeCandidateCurriculum(candidate.member?.id)?.eligibleTopics || [];
   try {
     const feedback = await generateFinalFeedback({ candidate, eligibleTopics, session });
-    return res.json({ sessionId, feedback });
+    const evaluation = buildEvaluationReport(session, candidate);
+    const legacyFeedback = buildLegacyFeedback(evaluation, session);
+    const payload = {
+      sessionId,
+      feedback: {
+        ...feedback,
+        ...legacyFeedback,
+        evaluation
+      }
+    };
+    return res.json(payload);
+  } catch (error) {
+    return sendAiError(res, error);
+  }
+});
+
+router.all(["/:sessionId/evaluation"], (req, res) => {
+  const session = getInterviewSession(req.params.sessionId);
+  if (!session) return res.status(404).json({ error: "Session not found" });
+  const candidate = getCandidateContext(session.candidateId);
+  const evaluation = buildEvaluationReport(session, candidate);
+  if (!evaluation) return res.status(400).json({ error: "Interview is not completed" });
+  return res.json({ sessionId: session.sessionId, evaluation });
+});
+
+router.post("/:sessionId/evaluation/chat", async (req, res) => {
+  const session = getInterviewSession(req.params.sessionId);
+  const candidateId = req.body?.candidateId || req.query?.candidateId;
+  if (!session) return res.status(404).json({ error: "Session not found" });
+  if (!session || session.status !== "completed") return res.status(400).json({ error: "Interview is not completed" });
+
+  const ownership = validateEvaluationOwnership(session, candidateId);
+  if (!ownership.allowed) {
+    return res.status(403).json({ error: ownership.reason || "Access denied" });
+  }
+
+  const candidate = getCandidateContext(session.candidateId);
+  const evaluation = buildEvaluationReport(session, candidate);
+  if (!evaluation) return res.status(400).json({ error: "Interview is not completed" });
+
+  try {
+    const reply = await generateEvaluationChatReply({
+      session,
+      candidate,
+      evaluation,
+      message: req.body?.message || "",
+      history: Array.isArray(req.body?.history) ? req.body.history : []
+    });
+    return res.json(reply);
   } catch (error) {
     return sendAiError(res, error);
   }

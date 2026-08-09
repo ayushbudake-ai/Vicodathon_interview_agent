@@ -22,7 +22,6 @@ app.get("/api/health", (_req, res) => {
 
 app.use("/api/interview", interviewRouter);
 
-export { app };
 export default app;
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

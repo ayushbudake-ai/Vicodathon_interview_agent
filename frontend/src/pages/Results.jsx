@@ -1,12 +1,13 @@
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, ArrowRight, CheckCircle2, CircleAlert, Sparkles, Target, RefreshCw, Layers, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, CircleAlert, Sparkles, Target, RefreshCw, Layers, ShieldCheck, SendHorizonal } from "lucide-react";
 import Logo from "../components/common/Logo";
 import { useInterview } from "../context/InterviewContext";
 
 export default function Results() {
   const { sessionId } = useParams();
-  const { results, sessionState, candidate, feedbackStatus, fetchFeedback } = useInterview();
+  const { results, sessionState, candidate, feedbackStatus, fetchFeedback, chatState, sendChatMessage } = useInterview();
+  const [draft, setDraft] = useState("");
 
   useEffect(() => {
     if (!results && sessionId && feedbackStatus !== "loading") {
@@ -52,6 +53,21 @@ export default function Results() {
 
   // Section 32 & 33: Topic Coverage % vs Performance Score
   const topicBreakdown = results.topicBreakdown || [];
+  const suggestions = useMemo(() => [
+    "Why did I get this score?",
+    "What were my strongest answers?",
+    "What should I improve?",
+    "Which answer hurt my score the most?",
+    "What should I study next?"
+  ], []);
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    const message = draft.trim();
+    if (!message) return;
+    setDraft("");
+    sendChatMessage(message);
+  };
 
   return (
     <div className="app-dark results-app">
@@ -230,6 +246,52 @@ export default function Results() {
               </div>
             ))}
           </div>
+        </section>
+
+        <section className="chatbot-card" style={{ marginTop: 18 }}>
+          <div className="card-header">
+            <div>
+              <span className="small-label">EVALUATION CHATBOT</span>
+              <h2>Ask about your interview report</h2>
+            </div>
+            <span className="completion-pill">Evidence-grounded</span>
+          </div>
+          <div className="chatbot-suggestions">
+            {suggestions.map((suggestion) => (
+              <button key={suggestion} type="button" className="chat-suggestion" onClick={() => setDraft(suggestion)}>
+                {suggestion}
+              </button>
+            ))}
+          </div>
+          <div className="chatbot-feed">
+            {chatState.messages.length === 0 ? (
+              <div className="chatbot-empty-state">
+                <p>Ask why a score was given, what your strongest answer was, or what to improve next.</p>
+              </div>
+            ) : (
+              chatState.messages.map((message, index) => (
+                <div key={`${message.role}-${index}`} className={`chat-message ${message.role === "assistant" ? "assistant" : "candidate"}`}>
+                  <strong>{message.role === "assistant" ? "Coach" : "You"}</strong>
+                  <p>{message.content}</p>
+                  {message.sources?.length > 0 && (
+                    <div className="chat-sources">
+                      {message.sources.map((source) => (
+                        <span key={`${source.questionId || source.topic}-${index}`}>{source.topic || "Interview evidence"}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+            {chatState.loading && <div className="chat-message assistant"><strong>Coach</strong><p>Analyzing your interview evidence…</p></div>}
+            {chatState.error && <div className="chat-message assistant"><strong>Coach</strong><p>{chatState.error}</p></div>}
+          </div>
+          <form onSubmit={handleSubmit} className="chatbot-form">
+            <input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Ask about your score, strengths, weaknesses, or next steps" />
+            <button type="submit" disabled={chatState.loading} className="btn btn-primary">
+              <SendHorizonal size={15} />
+            </button>
+          </form>
         </section>
 
         <Link to="/setup" className="results-back"><ArrowLeft size={15} /> Practice another interview</Link>

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { getCoverage } from "../services/interview/questionPlanner";
 import { buildTopicTimeline, createInitialInterviewState, normalizeAnswer } from "../utils/interviewState";
-import { completeInterviewSession, fetchInterviewSession, startInterviewSession, submitAnswerToSession } from "../services/interviewService";
+import { chatWithEvaluation, completeInterviewSession, fetchInterviewSession, startInterviewSession, submitAnswerToSession } from "../services/interviewService";
 
 const toQuestion = (question) => ({
   id: question.id || question.questionId,
@@ -48,6 +48,7 @@ export function useInterviewSession(candidate, explicitSessionId = null) {
   const [statusState, setStatusState] = useState("INITIALIZING"); // INITIALIZING | STARTING | QUESTION_READY | SUBMITTING_ANSWER | GENERATING_NEXT_QUESTION | COMPLETED | RESULTS | ERROR
   const [results, setResults] = useState(null);
   const [feedbackStatus, setFeedbackStatus] = useState("idle"); // idle | loading | ready | error
+  const [chatState, setChatState] = useState({ messages: [], loading: false, error: "" });
   const [error, setError] = useState("");
   const submissionInFlight = useRef(false);
 
@@ -133,12 +134,33 @@ export function useInterviewSession(candidate, explicitSessionId = null) {
       setFeedbackStatus("loading");
       const sid = sessionIdToFetch || aiSessionId;
       const evaluation = await completeInterviewSession(sid);
-      setResults(toResults(evaluation.feedback));
+      const normalizedResults = toResults(evaluation.feedback);
+      setResults(normalizedResults);
+      setChatState((prev) => ({ ...prev, messages: [] }));
       setFeedbackStatus("ready");
       setStatusState("RESULTS");
     } catch (err) {
       setFeedbackStatus("error");
       setError(err.message || "Failed to generate final interview report.");
+    }
+  };
+
+  const sendChatMessage = async (message) => {
+    if (!message?.trim() || !aiSessionId) return;
+    setChatState((prev) => ({ ...prev, loading: true, error: "" }));
+    try {
+      const response = await chatWithEvaluation(aiSessionId, candidate?.originalId || candidate?.id || "CAND-001", message.trim(), chatState.messages);
+      setChatState((prev) => ({
+        ...prev,
+        messages: [
+          ...prev.messages,
+          { role: "candidate", content: message.trim() },
+          { role: "assistant", content: response.answer, sources: response.sources || [] }
+        ],
+        loading: false
+      }));
+    } catch (err) {
+      setChatState((prev) => ({ ...prev, loading: false, error: err.message || "Evaluation chatbot unavailable." }));
     }
   };
 
@@ -225,6 +247,8 @@ export function useInterviewSession(candidate, explicitSessionId = null) {
     statusState,
     results,
     feedbackStatus,
+    chatState,
+    sendChatMessage,
     answered: sessionState.answers,
     followUpShown: false,
     followUpCount: sessionState.followUpCount,
