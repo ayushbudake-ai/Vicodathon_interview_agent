@@ -26,13 +26,10 @@ This document distinguishes between **verbatim AI prompts that are actually reta
 ## Architecture Planning
 
 - **Tool:** ChatGPT / Codex
-- **Date/time:** Not available
 - **Purpose:** Project planning and architecture division.
 - **Prompt:** No verbatim architecture prompt was retained.
 - **What is verified:** Retained development records show that AI assistance was used for project planning and architecture division.
 - **Output used:** Overall application architecture and implementation planning.
-
-The original architecture prompt is unavailable and is therefore not reconstructed.
 
 ---
 
@@ -41,13 +38,11 @@ The original architecture prompt is unavailable and is therefore not reconstruct
 ## Initial Frontend Prototype
 
 - **Tool:** Emergent
-- **Date/time:** Not available
+- **Date/time:** 8/8/26-11.48
 - **Purpose:** Create the initial frontend prototype.
 - **Prompt:** No verbatim frontend-generation prompt was retained.
 - **What is verified:** Retained development records identify Emergent as the tool used for the initial frontend prototype.
 - **Output used:** Initial frontend application/prototype.
-
-The original Emergent input text was not retained.
 
 ---
 
@@ -56,7 +51,6 @@ The original Emergent input text was not retained.
 ## Backend Development
 
 - **Tool:** ChatGPT / Codex / development tooling
-- **Date/time:** Not available for the original planning prompts.
 - **Purpose:** Backend implementation, interview APIs, AI interviewer integration, session management and testing.
 - **Prompt:** No separate general backend-development prompt was retained.
 - **Important note:** The exact runtime AI prompts documented later in this file are the backend model-call prompt artifacts that were retained.
@@ -67,10 +61,8 @@ The original Emergent input text was not retained.
 
 ## Candidate Eligibility
 
-- **Date/time:** Not applicable
 - **Tool:** Application code; no model call
 - **Purpose:** Identify completed and eligible curriculum topics and exclude skipped or failed missions.
-- **Prompt:** None.
 - **Output used:** `eligibleTopics` passed into interview and feedback model contexts.
 - **Files changed/used:**
   - `backend/src/analysis/eligibleTopicService.js`
